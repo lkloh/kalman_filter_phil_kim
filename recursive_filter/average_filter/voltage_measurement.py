@@ -2,12 +2,15 @@
 
 """
 Chapter 1.3: Voltage measurement example
+
+
+Notice that the average value is ,uch more 
 """
 from matplotlib import pyplot as plt
 import numpy as np
 import random
 
-NUM_SAMPLES = 50
+NUM_SAMPLES = 200
 DELTA_TIME = 0.2
 
 
@@ -23,7 +26,7 @@ def compute_recursive_average(count, data_point, prev_avg):
 def get_random_voltage_measurement():
     AVG = 14.4
     STD = 4
-    return AVG + STD * random.random()
+    return AVG + STD * random.triangular(-4, 4, 0)
 
 
 if __name__ == "__main__":
@@ -48,4 +51,5 @@ if __name__ == "__main__":
     plt.plot(timestamps, saved_measurements, label="Measurement", marker=".")
     plt.plot(timestamps, saved_averages, label="Average", marker=".")
     plt.legend()
+    plt.grid()
     plt.show()
