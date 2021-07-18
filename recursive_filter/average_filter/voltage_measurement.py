@@ -4,8 +4,19 @@
 Chapter 1.3: Voltage measurement example
 
 
-Notice that the average value is ,uch more 
+Notice that the average value is much more stable than the randomly generated
+measurement values. As data accumulates, the output value of `compute_recursive_average`
+approaches the actual average value of the voltage.
+
+When the physical quantity measured is average, its noise gets filtered out.
+This is how the equation
+
+\bar{x}_k = \alpha\bar{x}_{k-1} + (1-\alpha)x_k
+where \alpha = \frac{k-1}{k}
+
+came to be known as the "average filter"
 """
+
 from matplotlib import pyplot as plt
 import numpy as np
 import random
