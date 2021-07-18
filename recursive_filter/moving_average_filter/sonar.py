@@ -2,7 +2,21 @@
 
 """
 Chapter 2.4: Sonar
+==================
+Helicopter altitude against time, measured with sonar.
+Helicopter vibrations, condition of ground surface and other environment variables
+causes noise on the measured data which we remove using moving average filter.
+
+Moving average follows altitude variation well with noise removed.
+
+However there are slight delays from moving average filter,
+meaining the actual variation in measured altitude is show with some delays.
+* If the delay is too long (e.g. when the quantity to be measured is changing quickly), 
+  we should make the moving average window size smaller.
+* If the quatity to be measured is changing slowly, we should make the moving
+  average window size larger as large window sizes are better at reduces the noise.
 """
+
 from matplotlib import pyplot as plt
 import numpy as np
 import random
