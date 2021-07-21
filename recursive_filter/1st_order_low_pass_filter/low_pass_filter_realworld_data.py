@@ -12,26 +12,25 @@ with minimal time-delay.
 """
 from matplotlib import pyplot as plt
 import numpy as np
-import random
+from scipy.io import loadmat
 
-NUM_SAMPLES = 100
 ALPHA = 0.5  # 0 < ALPHA < 1
-DELTA_TIME = 1
+
+SONAR_MATLAB_DATA = loadmat("../SonarAlt.mat")
+SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
+NUM_SONAR_DATA_POINTS = len(SONAR_DATA)
+DELTA_TIME = 0.02
+WINDOW_SIZE = 10
 
 
 def low_pass_filter(estimate, data_point):
     return ALPHA * estimate + (1 - ALPHA) * data_point
 
 
-def generate_random_data_point(approximate):
-    temp = approximate + 4 * random.triangular(-1, 1, 0)
-    return temp * temp
-
-
 def plot_data(timestamps, measurements, estimates):
-    plt.title("Upwards trend data against time")
-    plt.xlabel("Time]")
-    plt.ylabel("Upwards trend data")
+    plt.title("Altitude [m] against time [s] with alpha=%f" % (ALPHA))
+    plt.xlabel("Time [s]")
+    plt.ylabel("Altitude [m]")
     plt.plot(
         timestamps, measurements, label="Measurement", marker=".", linestyle="None"
     )
@@ -44,20 +43,16 @@ def plot_data(timestamps, measurements, estimates):
 if __name__ == "__main__":
     prev_estimate = None
 
-    timestamps = np.zeros(NUM_SAMPLES)
-    measurements = np.zeros(NUM_SAMPLES)
-    estimates = np.zeros(NUM_SAMPLES)
+    timestamps = np.zeros(NUM_SONAR_DATA_POINTS)
+    measurements = np.zeros(NUM_SONAR_DATA_POINTS)
+    estimates = np.zeros(NUM_SONAR_DATA_POINTS)
 
-    for sample_count in range(NUM_SAMPLES):
-        data_point = generate_random_data_point(sample_count)
+    for sample_count in range(NUM_SONAR_DATA_POINTS):
+        data_point = SONAR_DATA[sample_count]
 
         if prev_estimate is None:
             prev_estimate = data_point
         curr_estimate = low_pass_filter(prev_estimate, data_point)
-        print(
-            "Low-pass estimate with alpha=%f at sample count %i for data_point %f is %f"
-            % (ALPHA, sample_count, data_point, curr_estimate)
-        )
 
         timestamps[sample_count] = DELTA_TIME * sample_count
         measurements[sample_count] = data_point
