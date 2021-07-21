@@ -9,6 +9,19 @@ where 0 < \alpha < 1
 More recent measurements are more highly-weighed than less recent ones.
 This enables noise-filtering and also tracking variation in the measurements simultaneously
 with minimal time-delay.
+
+It is important to set ALPHA appropriately for the dataset being measured.
+
+When ALPHA is low, then (1-ALPHA) is high, so more recent measurements are
+highly weighted. Thus the filter is more sensitive to variations in measusrements
+instead of noise-filtering, so there is more noise in the estimate.
+Low ALPHA can be used when the dataset changes quickly.
+
+When ALPHA is high, then (1-ALPHA) is low. Thus the estimate does not change
+much between consecutive epochs, so the filter is very smooth.
+However, recent measusrents are not highly-weighted and thus this filter
+is not very sensitive to changes in measurements.
+High ALPHA can be used when the dataset changes slowly.
 """
 from matplotlib import pyplot as plt
 import numpy as np
