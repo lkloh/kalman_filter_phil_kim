@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from scipy.io import loadmat
 
-ALPHA = 0.5  # 0 < ALPHA < 1
+ALPHA = 0.1  # 0 < ALPHA < 1
 
 SONAR_MATLAB_DATA = loadmat("../SonarAlt.mat")
 SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
