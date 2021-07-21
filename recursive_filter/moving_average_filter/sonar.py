@@ -22,7 +22,7 @@ import numpy as np
 import random
 from scipy.io import loadmat
 
-SONAR_MATLAB_DATA = loadmat("SonarAlt.mat")
+SONAR_MATLAB_DATA = loadmat("../SonarAlt.mat")
 SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
 NUM_SONAR_DATA_POINTS = len(SONAR_DATA)
 DELTA_TIME = 0.02
