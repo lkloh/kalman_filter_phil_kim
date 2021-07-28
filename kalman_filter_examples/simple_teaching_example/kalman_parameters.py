@@ -2,13 +2,28 @@
 
 """
 Chapter 10.4: Error covariance & Kalman Gain
+
+Error covariance drops quickly at the start, decreasing all the way to the end of the time series.
+Rate of decrease is fast at the start, slow at the end.
+By the end, the error covariance is as small as it could be - i.e. it achieved convergence.
+
+Kalman gain also drops quickly at the start, decreasing all the way to the end of the time series.
+The expression is
+\hat{x}_k = \hat_{x}_k^- + K_k * (z_k - H * \hat{x}_k^-)
+
+When the Kalman gain K_k decreases, then  K_k * (z_k - H * \hat{x}_k^-) decreases,
+so the contribution of this term to the estimate drops.
+But this means the contribution of the prediction \hat_{x}_k^- increases.
+As the predicrion is proportional to the estimate from the previous time point 
+(since \hat{x}_k^- = A * \hat{x}_{k-1})
+the estimate from the previous time point \hat{x}_{k-1} influences the new estimate the most.
+When Kalman gain is low, estimate does not change much - i.e. the estimate has achieved convergence.
 """
 import numpy as np
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
 
-# from numpy.linalg import inv
 import random
 
 NUM_SAMPLES = 500
