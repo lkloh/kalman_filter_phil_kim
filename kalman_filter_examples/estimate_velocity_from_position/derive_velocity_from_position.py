@@ -85,13 +85,15 @@ R = np.matrix([10])
 
 
 def generate_random_position_measurement(prev_true_position, prev_true_velocity):
+    noise_of_true_position = random.triangular(-20, 20, 0)
+    noise_of_true_velocity = random.triangular(-10, 10, 0)
     measured_position = (
         prev_true_position
         + PREPROGRAMMED_VELOCITY_OF_TRAIN * DELTA_TIME
-        + prev_true_velocity
+        + noise_of_true_position
     )
-    true_position = measured_position - random.triangular(-10, 10, 0)
-    true_velocity = PREPROGRAMMED_VELOCITY_OF_TRAIN + random.triangular(-10, 10, 0)
+    true_position = measured_position - noise_of_true_position
+    true_velocity = PREPROGRAMMED_VELOCITY_OF_TRAIN + noise_of_true_velocity
     return [true_position, true_velocity, measured_position]
 
 
@@ -177,7 +179,7 @@ if __name__ == "__main__":
     saved_true_velocity = np.zeros(NUM_SAMPLES)
     saved_velocity_estimates = np.zeros(NUM_SAMPLES)
 
-    # Initial state estimate
+    # Initial state estimate - velocity is wildly off!!
     x_estimate = np.matrix([[0], [20]])
 
     # Make estimated error covariance on the larger size for initial condition
