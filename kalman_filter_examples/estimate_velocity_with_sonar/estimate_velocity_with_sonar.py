@@ -1,27 +1,23 @@
 #!/usr/bin/env python3
 
 """
-Chapter 11: Estimating velocity from position with the Kalman Filter
---------------------------------------------------------------------
+Chapter 11.5: Estimate velocity with sonar altitude measurements
+----------------------------------------------------------------
 
-We again have a train that is supposed to maintain a velocity of 80m/s
-on a straight track. The position is measured and stored every 0.1 seconds.
-We want to obtain the velocity as well.
+Suppose we are developing a sonar. We install a prototype to a
+helicopter. The helicoptor makes a test flight and measures vertical
+distance to the ground surface, storing measurements at an interval
+of 0.02 s. Helicopter vibrations, condition of the ground surface,
+and other environmental factors contribute to measurement noise.
 
-The low-pass filter and Kalman filter can both be used for noise removal
-from the position measurements, but only the Kalman filter can be used to
-estimate velocity from the measured position data.
+The helicopter moved up an down with varying velocity. We want to
+verify that the Kalman filter could estimate velocity from the
+altitude data even when velocity is not constant.
 
-Challenges with estimating velocity from measured position data:
-* estimated_velocity = measured_displacement / time_of_travel
-* Using the ussual formular results in large errors in estimated velocity.
-  Noise from the position data and small elapsed time results in a large
-  spike when performing differentiation.
-* Using the moving average of position data to approximate the position
-  measurement and then differentiating would help, but it's complicated
-  and does not fit data well.
+Designing the Kalman Filter to estimate velocity from position -
+we use the same principles as before as physical laws describing
+relation between distance and velocity does not change.
 
-Designing the Kalman Filter to estimate velocity from position:
 * Physical quantities we are interested in: position & velocity.
   Set them as state variables.
   x = [position]
@@ -60,14 +56,14 @@ Designing the Kalman Filter to estimate velocity from position:
 """
 import numpy as np
 from numpy.linalg import inv
-import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
-import random
+from scipy.io import loadmat
 
-NUM_SAMPLES = 100
-DELTA_TIME = 0.1
-PREPROGRAMMED_VELOCITY_OF_TRAIN = 80
+SONAR_MATLAB_DATA = loadmat("../../data/SonarAlt.mat")
+SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
+NUM_SONAR_DATA_POINTS = len(SONAR_DATA)
+DELTA_TIME = 0.02
 
 # System model parameters for Kalman Filter
 
@@ -84,24 +80,10 @@ Q = np.matrix([[1, 0], [0, 3]])
 R = np.matrix([10])
 
 
-def generate_random_position_measurement(prev_true_position, prev_true_velocity):
-    noise_of_true_position = random.triangular(-20, 20, 0)
-    noise_of_true_velocity = random.triangular(-10, 10, 0)
-    measured_position = (
-        prev_true_position
-        + PREPROGRAMMED_VELOCITY_OF_TRAIN * DELTA_TIME
-        + noise_of_true_position
-    )
-    true_position = measured_position - noise_of_true_position
-    true_velocity = PREPROGRAMMED_VELOCITY_OF_TRAIN + noise_of_true_velocity
-    return [true_position, true_velocity, measured_position]
-
-
 def plot_data(
     timestamps,
     position_measurements,
     position_estimates,
-    true_velocity,
     velocity_estimates,
 ):
     fig = make_subplots(
@@ -115,9 +97,7 @@ def plot_data(
         shared_yaxes=True,
     )
     fig.update_layout(
-        title="Position & Velocity estimates of a train programed to move on a straight track at {} m/s".format(
-            str(PREPROGRAMMED_VELOCITY_OF_TRAIN)
-        )
+        title="Position & Velocity estimates of a helicopter moving at varying speeds"
     )
 
     fig.append_trace(
@@ -139,7 +119,10 @@ def plot_data(
 
     fig.append_trace(
         plotly_go.Scatter(
-            x=timestamps, y=true_velocity, name="True velocity", mode="markers"
+            x=timestamps,
+            y=position_measurements,
+            name="Position measurement",
+            mode="markers",
         ),
         row=2,
         col=1,
@@ -151,7 +134,7 @@ def plot_data(
     )
     fig.update_yaxes(title_text="Velocity", row=2, col=1)
 
-    fig.write_html("chapter11_esstimating_velocity_from_position.html")
+    fig.write_html("chapter11_5_estimating_velocity_from_sonar.html")
 
 
 def kalman_filter(prev_x_estimate, prev_P_estimate):
@@ -173,11 +156,11 @@ def kalman_filter(prev_x_estimate, prev_P_estimate):
 
 
 if __name__ == "__main__":
-    saved_timestamps = np.zeros(NUM_SAMPLES)
-    saved_position_measurements = np.zeros(NUM_SAMPLES)
-    saved_position_estimates = np.zeros(NUM_SAMPLES)
-    saved_true_velocity = np.zeros(NUM_SAMPLES)
-    saved_velocity_estimates = np.zeros(NUM_SAMPLES)
+
+    saved_timestamps = np.zeros(NUM_SONAR_DATA_POINTS)
+    saved_position_measurements = np.zeros(NUM_SONAR_DATA_POINTS)
+    saved_position_estimates = np.zeros(NUM_SONAR_DATA_POINTS)
+    saved_velocity_estimates = np.zeros(NUM_SONAR_DATA_POINTS)
 
     # Initial state estimate - velocity is wildly off!!
     x_estimate = np.matrix([[0], [20]])
@@ -186,15 +169,10 @@ if __name__ == "__main__":
     P_estimate = np.matrix([[5, 0], [0, 5]])
 
     prev_true_position = 0
-    prev_true_velocity = PREPROGRAMMED_VELOCITY_OF_TRAIN
+    prev_true_velocity = x_estimate[1]
 
-    for i in range(NUM_SAMPLES):
-        ## generate data
-        [true_position, true_velocity, z] = generate_random_position_measurement(
-            prev_true_position, prev_true_velocity
-        )
-        prev_true_position = true_position
-        prev_true_velocity = true_velocity
+    for i in range(NUM_SONAR_DATA_POINTS):
+        z = SONAR_DATA[i]
 
         [x_estimate, P_estimate] = kalman_filter(x_estimate, P_estimate)
 
@@ -202,13 +180,11 @@ if __name__ == "__main__":
         saved_timestamps[i] = DELTA_TIME * i
         saved_position_measurements[i] = z
         saved_position_estimates[i] = x_estimate[0]
-        saved_true_velocity[i] = true_velocity
         saved_velocity_estimates[i] = x_estimate[1]
 
     plot_data(
         saved_timestamps,
         saved_position_measurements,
         saved_position_estimates,
-        saved_true_velocity,
         saved_velocity_estimates,
     )

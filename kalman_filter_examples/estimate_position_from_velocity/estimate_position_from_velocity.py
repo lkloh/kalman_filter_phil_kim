@@ -1,25 +1,12 @@
 #!/usr/bin/env python3
 
 """
-Chapter 11: Estimating velocity from position with the Kalman Filter
---------------------------------------------------------------------
+Chapter 11.4: Estimating position with velocity with the Kalman Filter
+----------------------------------------------------------------------
 
-We again have a train that is supposed to maintain a velocity of 80m/s
-on a straight track. The position is measured and stored every 0.1 seconds.
-We want to obtain the velocity as well.
-
-The low-pass filter and Kalman filter can both be used for noise removal
-from the position measurements, but only the Kalman filter can be used to
-estimate velocity from the measured position data.
-
-Challenges with estimating velocity from measured position data:
-* estimated_velocity = measured_displacement / time_of_travel
-* Using the ussual formular results in large errors in estimated velocity.
-  Noise from the position data and small elapsed time results in a large
-  spike when performing differentiation.
-* Using the moving average of position data to approximate the position
-  measurement and then differentiating would help, but it's complicated
-  and does not fit data well.
+We have a train that is supposed to maintain a velocity of 80m/s
+on a straight track. The velocity is measured and stored every 0.1 seconds.
+We want to derive the position from the velocity measurements.
 
 Designing the Kalman Filter to estimate velocity from position:
 * Physical quantities we are interested in: position & velocity.
@@ -30,9 +17,9 @@ Designing the Kalman Filter to estimate velocity from position:
   x_{k+1} = A * x_k + w_k
   z_k = H * x_k + v_k
   A = [1 \delta(t)]
-      [0    1    ]
-  H = [1 0]
-  Where \delta(t) is the interval of time measuring the position.
+      [0      1   ]
+  H = [0   1]
+  Where \delta(t) is the interval of time measuring the velocity.
 * Verifying the system model represents the system appropriately:
   [position_{k+1}] = [1 \delta(t)][position_k] + [ 0 ]
   [velocity_{k+1}]   [0      1   ][velocity_k]   [w_k]
@@ -47,9 +34,9 @@ Designing the Kalman Filter to estimate velocity from position:
   are acting on the train.
 * To see the measurement equation of the system model:
   z_k = H * x_k + v_k
-      = [1 0][position_k] + v_k
-             [velocity_k]
-      = position_k + v_k
+      = [0  1][position_k] + v_k
+              [velocity_k]
+      = velocity_k + v_k
   so the measured position z_k is the sum of the true position (position_k)
   and the measurement noise (v_k).
 * The measurement noise covariance matrix R is usually provided by the sensor manufacturer.
@@ -65,7 +52,7 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
 import random
 
-NUM_SAMPLES = 100
+NUM_SAMPLES = 50
 DELTA_TIME = 0.1
 PREPROGRAMMED_VELOCITY_OF_TRAIN = 80
 
@@ -75,7 +62,7 @@ PREPROGRAMMED_VELOCITY_OF_TRAIN = 80
 A = np.matrix([[1, DELTA_TIME], [0, 1]])
 
 # state transition
-H = np.matrix([1, 0])
+H = np.matrix([0, 1])
 
 # Covariance of state transition noise
 Q = np.matrix([[1, 0], [0, 3]])
@@ -84,24 +71,20 @@ Q = np.matrix([[1, 0], [0, 3]])
 R = np.matrix([10])
 
 
-def generate_random_position_measurement(prev_true_position, prev_true_velocity):
-    noise_of_true_position = random.triangular(-20, 20, 0)
+def generate_random_velocity_measurement(prev_true_position, prev_true_velocity):
+    noise_of_true_position = random.triangular(-3, 3, 0)
     noise_of_true_velocity = random.triangular(-10, 10, 0)
-    measured_position = (
-        prev_true_position
-        + PREPROGRAMMED_VELOCITY_OF_TRAIN * DELTA_TIME
-        + noise_of_true_position
-    )
-    true_position = measured_position - noise_of_true_position
+    true_position = prev_true_position + (prev_true_velocity * DELTA_TIME) - noise_of_true_position
     true_velocity = PREPROGRAMMED_VELOCITY_OF_TRAIN + noise_of_true_velocity
-    return [true_position, true_velocity, measured_position]
+    measured_velocity = true_velocity
+    return [true_position, true_velocity, measured_velocity]
 
 
 def plot_data(
     timestamps,
-    position_measurements,
+    true_positions,
     position_estimates,
-    true_velocity,
+    velocity_measurements,
     velocity_estimates,
 ):
     fig = make_subplots(
@@ -123,8 +106,8 @@ def plot_data(
     fig.append_trace(
         plotly_go.Scatter(
             x=timestamps,
-            y=position_measurements,
-            name="Position measurement",
+            y=true_positions,
+            name="True position",
             mode="markers",
         ),
         row=1,
@@ -139,7 +122,10 @@ def plot_data(
 
     fig.append_trace(
         plotly_go.Scatter(
-            x=timestamps, y=true_velocity, name="True velocity", mode="markers"
+            x=timestamps,
+            y=velocity_measurements,
+            name="Measured velocity",
+            mode="markers",
         ),
         row=2,
         col=1,
@@ -151,7 +137,7 @@ def plot_data(
     )
     fig.update_yaxes(title_text="Velocity", row=2, col=1)
 
-    fig.write_html("chapter11_esstimating_velocity_from_position.html")
+    fig.write_html("chapter11_4_estimating_position_from_velocity.html")
 
 
 def kalman_filter(prev_x_estimate, prev_P_estimate):
@@ -174,9 +160,9 @@ def kalman_filter(prev_x_estimate, prev_P_estimate):
 
 if __name__ == "__main__":
     saved_timestamps = np.zeros(NUM_SAMPLES)
-    saved_position_measurements = np.zeros(NUM_SAMPLES)
+    saved_true_position = np.zeros(NUM_SAMPLES)
     saved_position_estimates = np.zeros(NUM_SAMPLES)
-    saved_true_velocity = np.zeros(NUM_SAMPLES)
+    saved_velocity_measurement = np.zeros(NUM_SAMPLES)
     saved_velocity_estimates = np.zeros(NUM_SAMPLES)
 
     # Initial state estimate - velocity is wildly off!!
@@ -190,7 +176,7 @@ if __name__ == "__main__":
 
     for i in range(NUM_SAMPLES):
         ## generate data
-        [true_position, true_velocity, z] = generate_random_position_measurement(
+        [true_position, true_velocity, z] = generate_random_velocity_measurement(
             prev_true_position, prev_true_velocity
         )
         prev_true_position = true_position
@@ -200,15 +186,15 @@ if __name__ == "__main__":
 
         # Save results for plotting
         saved_timestamps[i] = DELTA_TIME * i
-        saved_position_measurements[i] = z
+        saved_true_position[i] = true_position
         saved_position_estimates[i] = x_estimate[0]
-        saved_true_velocity[i] = true_velocity
+        saved_velocity_measurement[i] = z
         saved_velocity_estimates[i] = x_estimate[1]
 
     plot_data(
         saved_timestamps,
-        saved_position_measurements,
+        saved_true_position,
         saved_position_estimates,
-        saved_true_velocity,
+        saved_velocity_measurement,
         saved_velocity_estimates,
     )
