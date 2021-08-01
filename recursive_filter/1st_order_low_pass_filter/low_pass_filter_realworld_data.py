@@ -29,7 +29,7 @@ from scipy.io import loadmat
 
 ALPHA = 0.1  # 0 < ALPHA < 1
 
-SONAR_MATLAB_DATA = loadmat("../SonarAlt.mat")
+SONAR_MATLAB_DATA = loadmat("../../data/SonarAlt.mat")
 SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
 NUM_SONAR_DATA_POINTS = len(SONAR_DATA)
 DELTA_TIME = 0.02
