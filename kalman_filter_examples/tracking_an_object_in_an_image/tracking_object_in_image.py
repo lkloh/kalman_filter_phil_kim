@@ -85,16 +85,48 @@ R = np.matrix(
     ]
 )
 
+FRAME_HEIGHT = 30
+FRAME_WIDTH = 50
+
 
 def get_ball_position(index):
-    HEIGHT = 30
-    WIDTH = 50
-    measurement_x = WIDTH - index * (WIDTH / NUM_SAMPLES) + random.triangular(-3, 3, 0)
+    measurement_x = FRAME_WIDTH - index * (FRAME_WIDTH / NUM_SAMPLES) + random.triangular(-3, 3, 0)
     measurement_y = (
-        HEIGHT - index * (HEIGHT / NUM_SAMPLES) + random.triangular(-4, 4, 0)
+            FRAME_HEIGHT - index * (FRAME_HEIGHT / NUM_SAMPLES) + random.triangular(-4, 4, 0)
     )
     return [measurement_x, measurement_y]
 
+def plot_positions(x_pos_measurements, x_pos_estimates, y_pos_measurements, y_pos_estimates):
+    fig = make_subplots(
+        rows=1,
+        cols=1,
+        x_title="x-position",
+        y_title="y-position",
+    )
+    fig.update_layout(title="Ball Position")
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=x_pos_measurements,
+            y=y_pos_measurements,
+            name="Position measurement",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=x_pos_estimates,
+            y=y_pos_estimates,
+            name="Position estimates",
+            #mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig.write_html("chapter12_tracking_object_in_image_positions.html")
 
 def plot_data_against_time(
     timestamps, x_pos_measurements, x_pos_estimates, y_pos_measurements, y_pos_estimates
@@ -145,7 +177,7 @@ def plot_data_against_time(
     )
     fig.update_yaxes(title_text="y-position", row=2, col=1)
 
-    fig.write_html("chapter12_tracking_object_in_image.html")
+    fig.write_html("chapter12_tracking_object_in_image_position_against_time.html")
 
 
 def kalman_filter(z, prev_x_estimate, prev_P_estimate):
@@ -173,12 +205,12 @@ if __name__ == "__main__":
     y_pos_estimates = np.zeros(NUM_SAMPLES)
     y_pos_measurements = np.zeros(NUM_SAMPLES)
 
-    # Initial position of the ball is at (0, 0)
+    # Initial position of the ball is at (FRAME_WIDTH, FRAME_HEIGHT)
     x_estimate = np.matrix(
         [
+            [FRAME_WIDTH],
             [0],
-            [0],
-            [0],
+            [FRAME_HEIGHT],
             [0],
         ]
     )
@@ -220,3 +252,7 @@ if __name__ == "__main__":
         y_pos_measurements,
         y_pos_estimates,
     )
+    plot_positions(x_pos_measurements,
+                   x_pos_estimates,
+                   y_pos_measurements,
+                   y_pos_estimates)
