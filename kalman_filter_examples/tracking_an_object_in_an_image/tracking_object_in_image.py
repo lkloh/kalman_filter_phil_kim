@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+
+"""
+Chapter 12: Tracking an object in an image with the Kalman Filter
+-----------------------------------------------------------------
+
+We want to track an object in a 2D plane with the Kalman filter.
+
+This sort of program frequently happens when we want survey a target in
+a 2D image. For example, we use this technique to track a target on a radar scope
+or when tracking an object with a camera in real-time.
+
+The position of the target is obtained by an image processing algorithm.
+However, this position could be noisy. so we use the Kalman filter
+to remove noise from that position and also to estimate the un-measured velocity.
+
+SYSTEM MODEL
+============
+The state variable is:
+    [position_x]
+x = [velocity_x]
+    [position_y]
+    [velocity_y]
+
+and the system model is expressed as
+x_{k+1} = A x_k + w_k
+        = state_transition_matrix * state_variable + state_transition_noise
+        = [1 \Delta(t) 0     0    ][position_x]
+          [0     1     0     0    ][velocity_x] + w_k
+          [0     0     1 \Delta(t)][position_y]
+          [0     0     0     1    ][velocity_y]
+
+and
+z_k = H x_k + v_k
+    = [1 0 0 0][position_x] + v_k
+      [0 0 1 0][velocity_x]
+               [position_y]
+               [velocity_y]
+    = state_to_measurement_matrix * state_variable + measurement_noise
+
+Notice that this gives us this relationship in x & y directions:
+[position_{k+1}] = [position_k + velocity_k * \Delta(t) ] + w_k
+[velocity_{k+1}]   [             velocity_k             ]
+"""
+import numpy as np
+from numpy.linalg import inv
+import plotly.express as px
+from plotly.subplots import make_subplots
+import plotly.graph_objects as plotly_go
+import random
+
+NUM_SAMPLES = 100
+DELTA_TIME = 0.1
+
+# System model parameters for Kalman Filter
+
+# state transition
+A = np.matrix(
+    [
+        [1, DELTA_TIME, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, DELTA_TIME],
+        [0, 0, 0, 1],
+    ]
+)
+
+# state transition
+H = np.matrix([[1, 0, 0, 0], [0, 0, 1, 0]])
+
+# Covariance of state transition noise
+Q = np.matrix(
+    [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1],
+    ]
+)
+
+# Covariance of measurement noise
+R = np.matrix(
+    [
+        [50, 0],
+        [0, 50],
+    ]
+)
+
+
+def get_ball_position(index):
+    HEIGHT = 30
+    WIDTH = 50
+    measurement_x = WIDTH - index * (WIDTH / NUM_SAMPLES) + random.triangular(-3, 3, 0)
+    measurement_y = (
+        HEIGHT - index * (HEIGHT / NUM_SAMPLES) + random.triangular(-4, 4, 0)
+    )
+    return [measurement_x, measurement_y]
+
+
+def plot_data_against_time(
+    timestamps, x_pos_measurements, x_pos_estimates, y_pos_measurements, y_pos_estimates
+):
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        x_title="Time (s)",
+        subplot_titles=(
+            "x-position",
+            "y-position",
+        ),
+        shared_yaxes=True,
+    )
+    fig.update_layout(title="Ball Position against time")
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=x_pos_measurements,
+            name="x-position measurement",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.append_trace(
+        plotly_go.Scatter(x=timestamps, y=x_pos_estimates, name="x-position estimate"),
+        row=1,
+        col=1,
+    )
+    fig.update_yaxes(title_text="x-position", row=1, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=y_pos_measurements,
+            name="y-position measurement",
+            mode="markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.append_trace(
+        plotly_go.Scatter(x=timestamps, y=y_pos_estimates, name="y-position estimate"),
+        row=2,
+        col=1,
+    )
+    fig.update_yaxes(title_text="y-position", row=2, col=1)
+
+    fig.write_html("chapter12_tracking_object_in_image.html")
+
+
+def kalman_filter(z, prev_x_estimate, prev_P_estimate):
+    # Step I: Predict state
+    x_predict = A * prev_x_estimate
+    # Step I: Predict error covariance
+    P_predict = A * prev_P_estimate * A.transpose() + Q
+
+    # Step II: Compute Kalman Gain
+    K = P_predict * H.transpose() * inv(H * P_predict * H.transpose() + R)
+
+    # Step III: Compute estimate
+    x_estimate = x_predict + K * (z - H * x_predict)
+
+    # Step IV: Compute error covariance
+    P_estimate = P_predict - K * H * P_predict
+
+    return [x_estimate, P_estimate]
+
+
+if __name__ == "__main__":
+    timestamps = np.zeros(NUM_SAMPLES)
+    x_pos_measurements = np.zeros(NUM_SAMPLES)
+    x_pos_estimates = np.zeros(NUM_SAMPLES)
+    y_pos_estimates = np.zeros(NUM_SAMPLES)
+    y_pos_measurements = np.zeros(NUM_SAMPLES)
+
+    # Initial position of the ball is at (0, 0)
+    x_estimate = np.matrix(
+        [
+            [0],
+            [0],
+            [0],
+            [0],
+        ]
+    )
+
+    # Make the initial covariance estimate very large as we have no information about the system yet
+    P_estimate = np.matrix(
+        [
+            [100, 0, 0, 0],
+            [0, 100, 0, 0],
+            [0, 0, 100, 0],
+            [0, 0, 0, 100],
+        ]
+    )
+
+    for i in range(NUM_SAMPLES):
+        # generate data
+        [measurement_x, measurement_y] = get_ball_position(i)
+
+        # Estimate positions
+        z = np.matrix(
+            [
+                [measurement_x],
+                [measurement_y],
+            ]
+        )
+        [x_estimate, P_estimate] = kalman_filter(z, x_estimate, P_estimate)
+
+        # Save results for plotting
+        timestamps[i] = DELTA_TIME * i
+        x_pos_measurements[i] = measurement_x
+        x_pos_estimates[i] = x_estimate[0]
+        y_pos_measurements[i] = measurement_y
+        y_pos_estimates[i] = x_estimate[2]
+
+    plot_data_against_time(
+        timestamps,
+        x_pos_measurements,
+        x_pos_estimates,
+        y_pos_measurements,
+        y_pos_estimates,
+    )
