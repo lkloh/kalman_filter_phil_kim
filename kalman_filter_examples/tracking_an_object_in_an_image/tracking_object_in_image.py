@@ -199,6 +199,8 @@ def kalman_filter(z, prev_x_estimate, prev_P_estimate):
 
 
 if __name__ == "__main__":
+    tracking_ball()
+
     timestamps = np.zeros(NUM_SAMPLES)
     x_pos_measurements = np.zeros(NUM_SAMPLES)
     x_pos_estimates = np.zeros(NUM_SAMPLES)
