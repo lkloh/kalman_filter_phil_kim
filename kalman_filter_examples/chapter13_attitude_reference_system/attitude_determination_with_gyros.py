@@ -76,7 +76,7 @@ def plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw):
         plotly_go.Scatter(
             x=timestamps,
             y=estimated_roll,
-            name="Roll",
+            name="Estimated roll",
             mode="markers",
         ),
         row=1,
@@ -130,8 +130,8 @@ def obtain_attitude_by_integrating_gyro_measurements(
         angular_velocities.q * cos_phi - angular_velocities.r * sin_phi
     )
     current_euler_angles.psi = prev_euler_angles.psi + dt * (
-        angular_velocities.q * sin_phi / cos_theta
-        + angular_velocities.r * cos_phi / cos_theta
+        angular_velocities.q * sin_phi // cos_theta
+        + angular_velocities.r * cos_phi // cos_theta
     )
 
     return current_euler_angles
@@ -156,27 +156,23 @@ def kalman_filter(z, prev_x_estimate, prev_P_estimate):
 
 
 if __name__ == "__main__":
-    prev_euler_angles = EulerAngles(0, 0, 0)
-
     timestamps = np.zeros(NUM_GYRO_MEAS)
-    estimated_roll = np.zeros(NUM_GYRO_MEAS)
-    estimated_pitch = np.zeros(NUM_GYRO_MEAS)
-    estimated_yaw = np.zeros(NUM_GYRO_MEAS)
+    estimated_roll_deg = np.zeros(NUM_GYRO_MEAS)
+    estimated_pitch_deg = np.zeros(NUM_GYRO_MEAS)
+    estimated_yaw_deg = np.zeros(NUM_GYRO_MEAS)
 
-    current_euler_angles = EulerAngles(0, 0, 0)
-    current_euler_angles.psi = 1
-
+    prev_euler_angles = EulerAngles(0, 0, 0)
     for i in range(NUM_GYRO_MEAS):
         angular_velocities = AngularVelocities(GYRO_WX[i], GYRO_WY[i], GYRO_WZ[i])
         current_euler_angles = obtain_attitude_by_integrating_gyro_measurements(
             prev_euler_angles, angular_velocities, DELTA_TIME
         )
 
-        estimated_roll[i] = current_euler_angles.phi
-        estimated_pitch[i] = current_euler_angles.theta
-        estimated_yaw[i] = current_euler_angles.psi
+        estimated_roll_deg[i] = current_euler_angles.phi * (180 // math.pi)
+        estimated_pitch_deg[i] = current_euler_angles.theta * (180 // math.pi)
+        estimated_yaw_deg[i] = current_euler_angles.psi * (180 // math.pi)
         timestamps[i] = i * DELTA_TIME
 
         prev_euler_angles = current_euler_angles
 
-    plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw)
+    plot_data(timestamps, estimated_roll_deg, estimated_pitch_deg, estimated_yaw_deg)
