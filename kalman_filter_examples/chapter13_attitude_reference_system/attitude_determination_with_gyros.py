@@ -1,147 +1,85 @@
 #!/usr/bin/env python3
 
 """
-Chapter 13.2:
------------------------------------------------------------------
+Chapter 13.2: Attitude determination with gyroscopes
+----------------------------------------------------
+To obtain the horizontal attitude of a helicopter, we need to know the roll (\phi)
+and pitch (\theta) angles of the helicopter.
 
+The gyroscope measures angular velocities (p, q, r) of the helicopter.
+In order to obtain the Euler angles from the measurements of the gyroscope,
+we need to transform the measurements into rate of change in the Euler
+angles and then integrate them. This kinematic relationship is well-known:
+
+[\dot{\phi}]   = [1  \sin(\phi) * \tan(\theta)  \cos(\phi) * \tan(\theta)][p]
+[\dot{\theta}] = [0         \cos(\theta)              -\sin(\phi)        ][q]
+[\dot{\psi}]   = [0  \sin(\phi) / \cos(\theta)  \cos(\phi) / \cos(\theta)][r]
+
+If the initial values of roll (\phi), pitch (\theta) and yaw (\psi) are known,
+current attitude can be obtained by applying the angular velocities measured
+by the gyroscope (p, q, r) to the formula above, then integrating w.r.t. time.
+
+However, the measurements from the gyroscope have errors that are accumulated
+during integration. Estimationg of quantities with integration is not feasible
+for practical applications unless the sensor is very accurate or the time is
+very short.
 
 """
 import numpy as np
 from numpy.linalg import inv
+import math
 import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
-import random
+from scipy.io import loadmat
 
-NUM_SAMPLES = 100
-DELTA_TIME = 0.1
-
-# System model parameters for Kalman Filter
-
-# state transition
-A = np.matrix(
-    [
-        [1, DELTA_TIME, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, DELTA_TIME],
-        [0, 0, 0, 1],
-    ]
-)
-
-# state transition
-H = np.matrix([[1, 0, 0, 0], [0, 0, 1, 0]])
-
-# Covariance of state transition noise
-Q = np.matrix(
-    [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [0, 0, 0, 1],
-    ]
-)
-
-# Covariance of measurement noise
-R = np.matrix(
-    [
-        [50, 0],
-        [0, 50],
-    ]
-)
-
-FRAME_HEIGHT = 30
-FRAME_WIDTH = 50
+# load data
+GYRO_MATLAB_DATA = loadmat("./data/ArsGyro.mat")
+GYRO_WX = GYRO_MATLAB_DATA["wx"]
+GYRO_WY = GYRO_MATLAB_DATA["wy"]
+GYRO_WZ = GYRO_MATLAB_DATA["wx"]
+NUM_GYRO_MEAS = len(GYRO_WX)
+DELTA_TIME = 0.01
 
 
-def get_ball_position(index):
-    measurement_x = FRAME_WIDTH - index * (FRAME_WIDTH / NUM_SAMPLES) + random.triangular(-3, 3, 0)
-    measurement_y = (
-            FRAME_HEIGHT - index * (FRAME_HEIGHT / NUM_SAMPLES) + random.triangular(-4, 4, 0)
-    )
-    return [measurement_x, measurement_y]
+class AngularVelocities():
+    def __init__(self, p, q, r):
+        self.p = p
+        self.q = q
+        self.r = r
 
-def plot_positions(x_pos_measurements, x_pos_estimates, y_pos_measurements, y_pos_estimates):
-    fig = make_subplots(
-        rows=1,
-        cols=1,
-        x_title="x-position",
-        y_title="y-position",
-    )
-    fig.update_layout(title="Ball Position")
 
-    fig.append_trace(
-        plotly_go.Scatter(
-            x=x_pos_measurements,
-            y=y_pos_measurements,
-            name="Position measurement",
-            mode="markers",
-        ),
-        row=1,
-        col=1,
-    )
-    fig.append_trace(
-        plotly_go.Scatter(
-            x=x_pos_estimates,
-            y=y_pos_estimates,
-            name="Position estimates",
-            #mode="markers",
-        ),
-        row=1,
-        col=1,
-    )
+class EulerAngles():
+    def __init__(self, phi, theta, psi):
+        self.phi = phi # roll
+        self.theta = theta  # pitch
+        self.psi = psi  # yaw
 
-    fig.write_html("chapter12_tracking_object_in_image_positions.html")
 
-def plot_data_against_time(
-    timestamps, x_pos_measurements, x_pos_estimates, y_pos_measurements, y_pos_estimates
+def obtain_attitude_by_integrating_gyro_measurements(
+    prev_euler_angles, angular_velocities, dt
 ):
-    fig = make_subplots(
-        rows=2,
-        cols=1,
-        x_title="Time (s)",
-        subplot_titles=(
-            "x-position",
-            "y-position",
-        ),
-        shared_yaxes=True,
-    )
-    fig.update_layout(title="Ball Position against time")
+    current_euler_angles = EulerAngles(0, 0, 0)
 
-    fig.append_trace(
-        plotly_go.Scatter(
-            x=timestamps,
-            y=x_pos_measurements,
-            name="x-position measurement",
-            mode="markers",
-        ),
-        row=1,
-        col=1,
-    )
-    fig.append_trace(
-        plotly_go.Scatter(x=timestamps, y=x_pos_estimates, name="x-position estimate"),
-        row=1,
-        col=1,
-    )
-    fig.update_yaxes(title_text="x-position", row=1, col=1)
+    sin_phi = math.sin(prev_euler_angles.phi)
+    cos_phi = math.cos(prev_euler_angles.phi)
+    tan_theta = math.tan(prev_euler_angles.theta)
+    cos_theta = math.cos(prev_euler_angles.theta)
 
-    fig.append_trace(
-        plotly_go.Scatter(
-            x=timestamps,
-            y=y_pos_measurements,
-            name="y-position measurement",
-            mode="markers",
-        ),
-        row=2,
-        col=1,
+    current_euler_angles.phi = prev_euler_angles.phi + dt * (
+        angular_velocities.p
+        + angular_velocities.q * sin_phi * tan_theta
+        + angular_velocities.r * cos_phi * tan_theta
     )
-    fig.append_trace(
-        plotly_go.Scatter(x=timestamps, y=y_pos_estimates, name="y-position estimate"),
-        row=2,
-        col=1,
+    current_euler_angles.theta = prev_euler_angles.theta + dt * (
+        angular_velocities.q * cos_phi - angular_velocities.r * sin_phi
     )
-    fig.update_yaxes(title_text="y-position", row=2, col=1)
+    current_euler_angles.psi = prev_euler_angles.psi + dt * (
+        angular_velocities.q * sin_phi / cos_theta
+        + angular_velocities.r * cos_phi / cos_theta
+    )
 
-    fig.write_html("chapter12_tracking_object_in_image_position_against_time.html")
+    return current_euler_angles
 
 
 def kalman_filter(z, prev_x_estimate, prev_P_estimate):
@@ -163,62 +101,23 @@ def kalman_filter(z, prev_x_estimate, prev_P_estimate):
 
 
 if __name__ == "__main__":
-    tracking_ball()
+    prev_euler_angles = EulerAngles(0, 0, 0)
 
-    timestamps = np.zeros(NUM_SAMPLES)
-    x_pos_measurements = np.zeros(NUM_SAMPLES)
-    x_pos_estimates = np.zeros(NUM_SAMPLES)
-    y_pos_estimates = np.zeros(NUM_SAMPLES)
-    y_pos_measurements = np.zeros(NUM_SAMPLES)
+    estimated_roll = np.zeros(NUM_GYRO_MEAS)
+    estimated_pitch = np.zeros(NUM_GYRO_MEAS)
+    estimated_yaw = np.zeros(NUM_GYRO_MEAS)
 
-    # Initial position of the ball is at (FRAME_WIDTH, FRAME_HEIGHT)
-    x_estimate = np.matrix(
-        [
-            [FRAME_WIDTH],
-            [0],
-            [FRAME_HEIGHT],
-            [0],
-        ]
-    )
+    current_euler_angles = EulerAngles(0, 0, 0)
+    current_euler_angles.psi = 1
 
-    # Make the initial covariance estimate very large as we have no information about the system yet
-    P_estimate = np.matrix(
-        [
-            [100, 0, 0, 0],
-            [0, 100, 0, 0],
-            [0, 0, 100, 0],
-            [0, 0, 0, 100],
-        ]
-    )
-
-    for i in range(NUM_SAMPLES):
-        # generate data
-        [measurement_x, measurement_y] = get_ball_position(i)
-
-        # Estimate positions
-        z = np.matrix(
-            [
-                [measurement_x],
-                [measurement_y],
-            ]
+    for i in range(NUM_GYRO_MEAS):
+        angular_velocities = AngularVelocities(GYRO_WX[i], GYRO_WY[i], GYRO_WZ[i])
+        current_euler_angles = obtain_attitude_by_integrating_gyro_measurements(
+            prev_euler_angles, angular_velocities, DELTA_TIME
         )
-        [x_estimate, P_estimate] = kalman_filter(z, x_estimate, P_estimate)
 
-        # Save results for plotting
-        timestamps[i] = DELTA_TIME * i
-        x_pos_measurements[i] = measurement_x
-        x_pos_estimates[i] = x_estimate[0]
-        y_pos_measurements[i] = measurement_y
-        y_pos_estimates[i] = x_estimate[2]
+        estimated_roll[i] = current_euler_angles.phi
+        estimated_pitch[i] = current_euler_angles.theta
+        estimated_yaw[i] = current_euler_angles.psi
 
-    plot_data_against_time(
-        timestamps,
-        x_pos_measurements,
-        x_pos_estimates,
-        y_pos_measurements,
-        y_pos_estimates,
-    )
-    plot_positions(x_pos_measurements,
-                   x_pos_estimates,
-                   y_pos_measurements,
-                   y_pos_estimates)
+        prev_euler_angles = current_euler_angles
