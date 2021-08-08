@@ -42,18 +42,73 @@ NUM_GYRO_MEAS = len(GYRO_WX)
 DELTA_TIME = 0.01
 
 
-class AngularVelocities():
+class AngularVelocities:
     def __init__(self, p, q, r):
         self.p = p
         self.q = q
         self.r = r
 
 
-class EulerAngles():
+class EulerAngles:
     def __init__(self, phi, theta, psi):
-        self.phi = phi # roll
+        self.phi = phi  # roll
         self.theta = theta  # pitch
         self.psi = psi  # yaw
+
+
+def plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw):
+    fig = make_subplots(
+        rows=3,
+        cols=1,
+        x_title="Time (s)",
+        subplot_titles=(
+            "Estimated roll",
+            "Estimated pitch",
+            "Estimated yaw",
+        ),
+        shared_yaxes=True,
+    )
+    fig.update_layout(
+        title="Estimate roll, pitch, and yaw from a gyroscope using numerical integration"
+    )
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=estimated_roll,
+            name="Roll",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Roll angle [deg]", row=1, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=estimated_pitch,
+            name="Estimated pitch",
+            mode="markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Pitch angle [deg]", row=2, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=estimated_pitch,
+            name="Estimated yaw",
+            mode="markers",
+        ),
+        row=3,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Yaw angle [deg]", row=3, col=1)
+
+    fig.write_html("chapter13.2_attitude_determination_with_a_gyroscope.html")
 
 
 def obtain_attitude_by_integrating_gyro_measurements(
@@ -103,6 +158,7 @@ def kalman_filter(z, prev_x_estimate, prev_P_estimate):
 if __name__ == "__main__":
     prev_euler_angles = EulerAngles(0, 0, 0)
 
+    timestamps = np.zeros(NUM_GYRO_MEAS)
     estimated_roll = np.zeros(NUM_GYRO_MEAS)
     estimated_pitch = np.zeros(NUM_GYRO_MEAS)
     estimated_yaw = np.zeros(NUM_GYRO_MEAS)
@@ -119,5 +175,8 @@ if __name__ == "__main__":
         estimated_roll[i] = current_euler_angles.phi
         estimated_pitch[i] = current_euler_angles.theta
         estimated_yaw[i] = current_euler_angles.psi
+        timestamps[i] = i * DELTA_TIME
 
         prev_euler_angles = current_euler_angles
+
+    plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw)
