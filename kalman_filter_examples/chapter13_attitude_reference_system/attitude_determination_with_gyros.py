@@ -57,6 +57,21 @@ class EulerAngles:
 def plot_estimated_attitude(
     output_file, timestamps, estimated_roll, estimated_pitch, estimated_yaw
 ):
+    '''
+    The roll angle (\phi) oscillates with an amplitude of about +/-30 deg between 1min - 2min.
+    Similar motion occurs between 3min-4min. The result of the vibration applied is well-represented
+    but some error along time can be seen. The value of the attitude itself deviates a lot
+    due to accumulation of error.
+    
+    For the pitch angle (\theta), the measurement increases between 0min-3min though there is no
+    vibration along the pitch axis. This is due to error accumulate due to the influence
+    of the vibration along the roll axis. This error accumulation affects the result a lot,
+    but the pattern of the vibration applied is still well-represented.
+    
+    In summary, attitude obtained by integration of angular velocity captures the vibration trend well,
+    but drifts from the true value due to error accumulation. Thus a gyroscope is better used
+    to measure the trend of the attitude than to measure the absolute value of the attitude.
+    '''
     fig = make_subplots(
         rows=3,
         cols=1,
