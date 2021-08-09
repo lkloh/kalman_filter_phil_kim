@@ -26,9 +26,7 @@ very short.
 
 """
 import numpy as np
-from numpy.linalg import inv
 import math
-import plotly.express as px
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
 from scipy.io import loadmat
@@ -56,7 +54,9 @@ class EulerAngles:
         self.psi = psi  # yaw
 
 
-def plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw):
+def plot_estimated_attitude(
+    output_file, timestamps, estimated_roll, estimated_pitch, estimated_yaw
+):
     fig = make_subplots(
         rows=3,
         cols=1,
@@ -99,7 +99,7 @@ def plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw):
     fig.append_trace(
         plotly_go.Scatter(
             x=timestamps,
-            y=estimated_pitch,
+            y=estimated_yaw,
             name="Estimated yaw",
             mode="markers",
         ),
@@ -108,7 +108,7 @@ def plot_data(timestamps, estimated_roll, estimated_pitch, estimated_yaw):
     )
     fig.update_yaxes(title_text="Yaw angle [deg]", row=3, col=1)
 
-    fig.write_html("chapter13.2_attitude_determination_with_a_gyroscope.html")
+    output_file.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
 
 def obtain_attitude_by_integrating_gyro_measurements(
@@ -137,25 +137,69 @@ def obtain_attitude_by_integrating_gyro_measurements(
     return current_euler_angles
 
 
-def kalman_filter(z, prev_x_estimate, prev_P_estimate):
-    # Step I: Predict state
-    x_predict = A * prev_x_estimate
-    # Step I: Predict error covariance
-    P_predict = A * prev_P_estimate * A.transpose() + Q
+def plot_angular_velocities(output_file):
+    """
+    Plot angular velocities measured by the gyroscopes from the test.
 
-    # Step II: Compute Kalman Gain
-    K = P_predict * H.transpose() * inv(H * P_predict * H.transpose() + R)
+    The trend of the maneuver is well-represented. Noise filters are
+    built into the navigation sensors used in the test, so the output
+    is cleaner compared to some cheap gyros.
+    """
+    timestamps = np.arange(0, NUM_GYRO_MEAS, DELTA_TIME)
 
-    # Step III: Compute estimate
-    x_estimate = x_predict + K * (z - H * x_predict)
+    fig = make_subplots(
+        rows=3,
+        cols=1,
+        x_title="Time (s)",
+        subplot_titles=(
+            "Measured roll rate",
+            "Measured pitch rate",
+            "Measured yaw rate",
+        ),
+        shared_yaxes=True,
+    )
+    fig.update_layout(title="Measured roll, pitch, and yaw rate")
 
-    # Step IV: Compute error covariance
-    P_estimate = P_predict - K * H * P_predict
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=np.array(GYRO_WX[:, 0]),
+            name="Measured roll rate [deg/s]",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Roll rate [deg/s]", row=1, col=1)
 
-    return [x_estimate, P_estimate]
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=np.array(GYRO_WY[:, 0]),
+            name="Measured pitch rate [deg/s]",
+            mode="markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Pitch rate [deg/s]", row=2, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=timestamps,
+            y=np.array(GYRO_WZ[:, 0]),
+            name="Measured yaw rate [deg/s]",
+            mode="markers",
+        ),
+        row=3,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Yaw rate [deg/s]", row=3, col=1)
+
+    output_file.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
 
 
-if __name__ == "__main__":
+def handle_estimated_attitude(output_file):
     timestamps = np.zeros(NUM_GYRO_MEAS)
     estimated_roll_deg = np.zeros(NUM_GYRO_MEAS)
     estimated_pitch_deg = np.zeros(NUM_GYRO_MEAS)
@@ -175,4 +219,17 @@ if __name__ == "__main__":
 
         prev_euler_angles = current_euler_angles
 
-    plot_data(timestamps, estimated_roll_deg, estimated_pitch_deg, estimated_yaw_deg)
+    plot_estimated_attitude(
+        output_file,
+        timestamps,
+        estimated_roll_deg,
+        estimated_pitch_deg,
+        estimated_yaw_deg,
+    )
+
+
+if __name__ == "__main__":
+    output_file = open("chapter13.2_attitude_determination_with_gyroscopes.html", "w")
+
+    plot_angular_velocities(output_file)
+    handle_estimated_attitude(output_file)
