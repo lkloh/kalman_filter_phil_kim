@@ -72,12 +72,7 @@ ACCEL_WZ = ACCEL_MATLAB_DATA["fz"][:, 0]
 NUM_ACCEL_MEAS = len(ACCEL_WX)
 DELTA_TIME = 0.01
 
-
-class AngularVelocities:
-    def __init__(self, p, q, r):
-        self.p = p
-        self.q = q
-        self.r = r
+GRAVITATIONAL_ACCEL = 9.8
 
 
 class EulerAngles:
@@ -87,37 +82,33 @@ class EulerAngles:
         self.psi = psi  # yaw
 
 
-def plot_estimated_attitude(
-        output_file, timestamps, estimated_roll, estimated_pitch, estimated_yaw
-):
-    """
-    The roll angle (\phi) oscillates with an amplitude of about +/-30 deg between 1min - 2min.
-    Similar motion occurs between 3min-4min. The result of the vibration applied is well-represented
-    but some error along time can be seen. The value of the attitude itself deviates a lot
-    due to accumulation of error.
+def plot_estimated_horizontal_attitude(timestamps, estimated_roll, estimated_pitch):
+    '''
+    The horizontal attitude computed from the measured accelerations is plotted here.
 
-    For the pitch angle (\theta), the measurement increases between 0min-3min though there is no
-    vibration along the pitch axis. This is due to error accumulate due to the influence
-    of the vibration along the roll axis. This error accumulation affects the result a lot,
-    but the pattern of the vibration applied is still well-represented.
+    The sinusoidal pattern of the test vibration applied is well represented in the
+    roll and pitch angle plots. Unlike the estimate from gyro measurements, the
+    plot comes back to 0. There is no error accumulation or bias -- this is because the
+    estimation process did not need to use numerical integration to determine attitude.
+    Unlike the case when we use gyroscopes, the system model with the accelerometer
+    does not need to rely on the system having small acceleration and angular velocity.
 
-    In summary, attitude obtained by integration of angular velocity captures the vibration trend well,
-    but drifts from the true value due to error accumulation. Thus a gyroscope is better used
-    to measure the trend of the attitude than to measure the absolute value of the attitude.
-    """
+    Unfortunately, the maximum estimate amplitude is +/-9 degrees, which is way below
+    the actual value of +/-30 degrees. The error is large so we cannot rely on the
+    accelerometer alone.
+    '''
     fig = make_subplots(
-        rows=3,
+        rows=2,
         cols=1,
         x_title="Time (s)",
         subplot_titles=(
             "Estimated roll",
             "Estimated pitch",
-            "Estimated yaw",
         ),
         shared_yaxes=True,
     )
     fig.update_layout(
-        title="Estimate roll, pitch, and yaw from a gyroscope using numerical integration"
+        title="Estimate roll and pitch obtained from measurements from an accelerometer"
     )
 
     fig.append_trace(
@@ -144,45 +135,13 @@ def plot_estimated_attitude(
     )
     fig.update_yaxes(title_text="Pitch angle [deg]", row=2, col=1)
 
-    fig.append_trace(
-        plotly_go.Scatter(
-            x=timestamps,
-            y=estimated_yaw,
-            name="Estimated yaw",
-            mode="markers",
-        ),
-        row=3,
-        col=1,
-    )
-    fig.update_yaxes(title_text="Yaw angle [deg]", row=3, col=1)
-
-    output_file.write(fig.to_html(full_html=False, include_plotlyjs="cdn"))
+    fig.write_html("chapter13.3_attitude_determination_with_accelerometer.html")
 
 
-def obtain_attitude_by_integrating_gyro_measurements(
-        prev_euler_angles, angular_velocities, dt
-):
-    current_euler_angles = EulerAngles(0, 0, 0)
-
-    sin_phi = math.sin(prev_euler_angles.phi)
-    cos_phi = math.cos(prev_euler_angles.phi)
-    tan_theta = math.tan(prev_euler_angles.theta)
-    cos_theta = math.cos(prev_euler_angles.theta)
-
-    current_euler_angles.phi = prev_euler_angles.phi + dt * (
-            angular_velocities.p
-            + angular_velocities.q * sin_phi * tan_theta
-            + angular_velocities.r * cos_phi * tan_theta
-    )
-    current_euler_angles.theta = prev_euler_angles.theta + dt * (
-            angular_velocities.q * cos_phi - angular_velocities.r * sin_phi
-    )
-    current_euler_angles.psi = prev_euler_angles.psi + dt * (
-            angular_velocities.q * sin_phi // cos_theta
-            + angular_velocities.r * cos_phi // cos_theta
-    )
-
-    return current_euler_angles
+def obtain_euler_angles_from_acceleration_measurements(ax, ay):
+    theta = math.asin(ax / GRAVITATIONAL_ACCEL)
+    phi = math.asin((-1 * ay) / (GRAVITATIONAL_ACCEL * math.cos(theta)))
+    return EulerAngles(theta, phi, None)
 
 
 def plot_measured_acceleration():
@@ -253,34 +212,26 @@ def plot_measured_acceleration():
 
 
 def handle_estimated_attitude():
-    timestamps = np.zeros(NUM_GYRO_MEAS)
-    estimated_roll_deg = np.zeros(NUM_GYRO_MEAS)
-    estimated_pitch_deg = np.zeros(NUM_GYRO_MEAS)
-    estimated_yaw_deg = np.zeros(NUM_GYRO_MEAS)
+    timestamps = np.zeros(NUM_ACCEL_MEAS)
+    estimated_roll_deg = np.zeros(NUM_ACCEL_MEAS)
+    estimated_pitch_deg = np.zeros(NUM_ACCEL_MEAS)
 
-    prev_euler_angles = EulerAngles(0, 0, 0)
-    for i in range(NUM_GYRO_MEAS):
-        angular_velocities = AngularVelocities(GYRO_WX[i], GYRO_WY[i], GYRO_WZ[i])
-        current_euler_angles = obtain_attitude_by_integrating_gyro_measurements(
-            prev_euler_angles, angular_velocities, DELTA_TIME
+    for i in range(NUM_ACCEL_MEAS):
+        euler_angles = obtain_euler_angles_from_acceleration_measurements(
+            ACCEL_WX[i], ACCEL_WY[i]
         )
 
-        estimated_roll_deg[i] = current_euler_angles.phi * (180 // math.pi)
-        estimated_pitch_deg[i] = current_euler_angles.theta * (180 // math.pi)
-        estimated_yaw_deg[i] = current_euler_angles.psi * (180 // math.pi)
+        estimated_roll_deg[i] = euler_angles.phi * (180 // math.pi)
+        estimated_pitch_deg[i] = euler_angles.theta * (180 // math.pi)
         timestamps[i] = i * DELTA_TIME
 
-        prev_euler_angles = current_euler_angles
-
-    plot_estimated_attitude(
-        output_file,
+    plot_estimated_horizontal_attitude(
         timestamps,
         estimated_roll_deg,
         estimated_pitch_deg,
-        estimated_yaw_deg,
     )
 
 
 if __name__ == "__main__":
     plot_measured_acceleration()
-    #handle_estimated_attitude()
+    handle_estimated_attitude()
