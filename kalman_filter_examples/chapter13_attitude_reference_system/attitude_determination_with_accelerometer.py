@@ -82,7 +82,21 @@ class EulerAngles:
         self.psi = psi  # yaw
 
 
-def plot_estimated_attitude(timestamps, estimated_roll, estimated_pitch):
+def plot_estimated_horizontal_attitude(timestamps, estimated_roll, estimated_pitch):
+    '''
+    The horizontal attitude computed from the measured accelerations is plotted here.
+
+    The sinusoidal pattern of the test vibration applied is well represented in the
+    roll and pitch angle plots. Unlike the estimate from gyro measurements, the
+    plot comes back to 0. There is no error accumulation or bias -- this is because the
+    estimation process did not need to use numerical integration to determine attitude.
+    Unlike the case when we use gyroscopes, the system model with the accelerometer
+    does not need to rely on the system having small acceleration and angular velocity.
+
+    Unfortunately, the maximum estimate amplitude is +/-9 degrees, which is way below
+    the actual value of +/-30 degrees. The error is large so we cannot rely on the
+    accelerometer alone.
+    '''
     fig = make_subplots(
         rows=2,
         cols=1,
@@ -211,7 +225,7 @@ def handle_estimated_attitude():
         estimated_pitch_deg[i] = euler_angles.theta * (180 // math.pi)
         timestamps[i] = i * DELTA_TIME
 
-    plot_estimated_attitude(
+    plot_estimated_horizontal_attitude(
         timestamps,
         estimated_roll_deg,
         estimated_pitch_deg,
