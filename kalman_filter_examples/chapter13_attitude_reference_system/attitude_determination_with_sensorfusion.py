@@ -105,9 +105,35 @@ measurement is obtained. This is the measurement z_k for the Kalman filter.
 
 All state variables of the quaternion are measured, so the state-to-measurement
 matrix H simply is the 4x4 identify matrix.
+
 """
 import numpy as np
 import math
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
 from scipy.io import loadmat
+
+'''
+Noise covariance matrices are related to characteristics of the system signal.
+Hard for theoretically analyze what they should be - better to analyze real-time data.
+These are design factors, values decided after monitoring the variance of performance
+through trial an error. These are example values.
+'''
+# Covariance of state transition noise
+Q = np.matrix([
+    [1e-4, 0, 0, 0],
+    [0, 1e-4, 0, 0],
+    [0, 0, 1e-4, 0],
+    [0, 0, 0, 1e-4],
+])
+# Covariance of measurement noise
+R = np.matrix([
+    [10, 0, 0, 0],
+    [0, 10, 0, 0],
+    [0, 0, 10, 0],
+    [0, 0, 0, 10],
+])
+
+
+if __name__ == "__main__":
+    print('hello')
