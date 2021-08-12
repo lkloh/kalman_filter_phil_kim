@@ -49,9 +49,62 @@ x = [\theta] pitch
 The relationship between angular velocities (p, q, r) from the gyroscope and
 rate of change (\dot{\phi}, \dot{\theta}, \dot{\psi}) in the Euler angles is well-known:
 
-[\dot{\phi}]   = [1  \sin(\phi) * \tan(\theta)  \cos(\phi) * \tan(\theta)][p]
+[\dot{\phi}  ] = [1  \sin(\phi) * \tan(\theta)  \cos(\phi) * \tan(\theta)][p]
 [\dot{\theta}] = [0         \cos(\theta)              -\sin(\phi)        ][q]
-[\dot{\psi}]   = [0  \sin(\phi) / \cos(\theta)  \cos(\phi) / \cos(\theta)][r]
+[\dot{\psi}  ] = [0  \sin(\phi) / \cos(\theta)  \cos(\phi) / \cos(\theta)][r]
+
+However, there is a problem with using this equation in a Kalman filter's system model.
+It should be written like this:
+                             [ \dot{\phi} ]   [   ][ \phi ]
+x_{k+1} = A * x_K + w_k <==> [\dot{\theta}] = [ ? ][\theta] + w
+                             [ \dot{\psi} ]   [   ][ \psi ]
+We cannot extract Euler angles from the matrix, and therefore cannot use the
+Kalman filter in this form. We need to find a way to change the shape into a form
+that can be used in Kalman filter. One way to do this is select a different
+set of state variables.
+
+Instead of Euler angles, we use the quaternion as the state variable. It is another
+way to express attitude, and the derivation is well known.
+    [Q1]
+x = [Q2]
+    [Q3]
+    [Q4]
+
+The relationship between angular velocity and rate of change in quaternion is also
+well-known:
+
+[\dot{Q1}]         [0 -p -q -r][Q1]
+[\dot{Q2}] = 1/2 * [p 0  r  -q][Q2]
+[\dot{Q3}]         [q -r 0  p ][Q3]
+[\dot{Q4}]         [r q  -p 0 ][Q4]
+
+Only the state variable has been changed -- and now the Euler angles can be extracted
+from the expression. The system model becomes:
+
+[Q1_{k+1}]   (                      [0 -p -q -r])   [Q1]
+[Q2_{k+1}] = (I + \delta(t) * 1/2 * [p 0  r  -q]) * [Q2]
+[Q3_{k+1}]   (                      [q -r 0  p ])   [Q3]
+[Q4_{k+1}]   (                      [r q  -p 0 ])   [Q4]
+and matrix A of the system model is
+                      [0  -p -q -r]
+I + \delta(t) * 1/2 * [p  0  r  -q]
+                      [q  -r 0  p ]
+                      [r  q  -p 0 ]
+We see that elements of A now change according to angular velocity.
+
+The Euler angles calculated from the accelerometer will be used as measurements
+to the Kalman filter. Since the state variable is the quaternion, the acceleration
+measurements must be transform to the quaternion. The transformation expression is:
+[Q1]   [cos(phi/2) * cos(theta/2) * cos(psi/2) + sin(phi/2) * sin(theta/2) * sin(psi/2)]
+[Q2] = [sin(phi/2) * cos(theta/2) * cos(psi/2) - cos(phi/2) * sin(theta/2) * sin(psi/2)]
+[Q3]   [cos(phi/2) * sin(theta/2) * cos(psi/2) + sin(phi/2) * cos(theta/2) * sin(psi/2)]
+[Q4]   [cos(phi/2) * cos(theta/2) * sin(psi/2) - sin(phi/2) * sin(theta/2) * cos(psi/2)]
+
+By applying attitude from accelerometer to the above expression, the quaternion
+measurement is obtained. This is the measurement z_k for the Kalman filter.
+
+All state variables of the quaternion are measured, so the state-to-measurement
+matrix H simply is the 4x4 identify matrix.
 """
 import numpy as np
 import math
