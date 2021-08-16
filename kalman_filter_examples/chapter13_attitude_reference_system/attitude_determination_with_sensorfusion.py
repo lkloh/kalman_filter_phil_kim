@@ -258,13 +258,13 @@ def acceleration_to_euler_angles(ax, ay):
 
 
 def euler_angles_to_quaternion(euler_angles):
-    sin_phi = math.sin(euler_angles.phi // 2)
-    sin_theta = math.sin(euler_angles.theta // 2)
-    sin_psi = math.sin(euler_angles.psi // 2)
+    sin_phi = math.sin(euler_angles.phi / 2)
+    sin_theta = math.sin(euler_angles.theta / 2)
+    sin_psi = math.sin(euler_angles.psi / 2)
 
-    cos_phi = math.cos(euler_angles.phi // 2)
-    cos_theta = math.cos(euler_angles.theta // 2)
-    cos_psi = math.cos(euler_angles.psi // 2)
+    cos_phi = math.cos(euler_angles.phi / 2)
+    cos_theta = math.cos(euler_angles.theta / 2)
+    cos_psi = math.cos(euler_angles.psi / 2)
 
     return np.matrix(
         [
@@ -331,10 +331,10 @@ if __name__ == "__main__":
         estimated_euler_angles = quaternion_to_euler_angles(current_x_estimate)
 
         timestamps[measurement_idx] = measurement_idx * DELTA_TIME
-        estimated_phi[measurement_idx] = estimated_euler_angles.phi * (180 // math.pi)
+        estimated_phi[measurement_idx] = estimated_euler_angles.phi * (180 / math.pi)
         estimated_theta[measurement_idx] = estimated_euler_angles.theta * (
-            180 // math.pi
+            180 / math.pi
         )
-        estimated_psi[measurement_idx] = estimated_euler_angles.psi * (180 // math.pi)
+        estimated_psi[measurement_idx] = estimated_euler_angles.psi * (180 / math.pi)
 
     plot_estimates(timestamps, estimated_phi, estimated_theta, estimated_psi)
