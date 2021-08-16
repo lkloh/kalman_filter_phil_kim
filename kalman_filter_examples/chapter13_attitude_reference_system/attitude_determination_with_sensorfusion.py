@@ -113,27 +113,71 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
 from scipy.io import loadmat
 
-'''
+# load gyroscope measurements
+GYRO_MATLAB_DATA = loadmat("./data/ArsGyro.mat")
+GYRO_WX = GYRO_MATLAB_DATA["wx"]
+GYRO_WY = GYRO_MATLAB_DATA["wy"]
+GYRO_WZ = GYRO_MATLAB_DATA["wx"]
+NUM_GYRO_MEAS = len(GYRO_WX)
+
+ACCEL_MATLAB_DATA = loadmat("./data/ArsAccel.mat")
+ACCEL_WX = ACCEL_MATLAB_DATA["fx"][:, 0]
+ACCEL_WY = ACCEL_MATLAB_DATA["fy"][:, 0]
+ACCEL_WZ = ACCEL_MATLAB_DATA["fz"][:, 0]
+NUM_ACCEL_MEAS = len(ACCEL_WX)
+
+DELTA_TIME = 0.01
+
+GRAVITATIONAL_ACCEL = 9.8
+
+"""
 Noise covariance matrices are related to characteristics of the system signal.
 Hard for theoretically analyze what they should be - better to analyze real-time data.
 These are design factors, values decided after monitoring the variance of performance
 through trial an error. These are example values.
-'''
+"""
 # Covariance of state transition noise
-Q = np.matrix([
-    [1e-4, 0, 0, 0],
-    [0, 1e-4, 0, 0],
-    [0, 0, 1e-4, 0],
-    [0, 0, 0, 1e-4],
-])
+Q = np.matrix(
+    [
+        [1e-4, 0, 0, 0],
+        [0, 1e-4, 0, 0],
+        [0, 0, 1e-4, 0],
+        [0, 0, 0, 1e-4],
+    ]
+)
 # Covariance of measurement noise
-R = np.matrix([
-    [10, 0, 0, 0],
-    [0, 10, 0, 0],
-    [0, 0, 10, 0],
-    [0, 0, 0, 10],
-])
+R = np.matrix(
+    [
+        [10, 0, 0, 0],
+        [0, 10, 0, 0],
+        [0, 0, 10, 0],
+        [0, 0, 0, 10],
+    ]
+)
+
+
+def kalman_filter(prev_x_estimate, prev_P_estimate):
+    # Step I: Predict state
+    x_predict = A * prev_x_estimate
+    # Step I: Predict error covariance
+    P_predict = A * prev_P_estimate * A.transpose() + Q
+
+    # Step II: Compute Kalman Gain
+    K = P_predict * H.transpose() * inv(H * P_predict * H.transpose() + R)
+
+    # Step III: Compute estimate
+    x_estimate = x_predict + K * (z - H * x_predict)
+
+    # Step IV: Compute error covariance
+    P_estimate = P_predict - K * H * P_predict
+
+    return [x_estimate, P_estimate]
 
 
 if __name__ == "__main__":
-    print('hello')
+    if NUM_GYRO_MEAS != NUM_ACCEL_MEAS:
+        print(
+            "Error, number of gyroscope measurements (%i) is different from number of accelerometer measurements(%i)",
+            NUM_GYRO_MEAS,
+            NUM_ACCEL_MEAS,
+        )
