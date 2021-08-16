@@ -106,6 +106,10 @@ measurement is obtained. This is the measurement z_k for the Kalman filter.
 All state variables of the quaternion are measured, so the state-to-measurement
 matrix H simply is the 4x4 identify matrix.
 
+The resulting fusion of accelerometer and gyroscope shows the trajectory of roll and pitch
+angles well, and the oscillation of +/- 30 deg is accurately shown.
+But it is rare that a system model can be expression in a linear form as the
+Kalman filter requires. A generalized approach is needed in most cases.
 """
 import numpy as np
 from numpy.linalg import inv
@@ -212,7 +216,7 @@ def plot_estimates(timestamps, estimated_phi, estimated_theta, estimated_psi):
         row=2,
         col=1,
     )
-    fig.update_yaxes(title_text="Pitch angle [deg]", row=1, col=1)
+    fig.update_yaxes(title_text="Pitch angle [deg]", row=2, col=1)
 
     fig.append_trace(
         plotly_go.Scatter(
@@ -224,9 +228,9 @@ def plot_estimates(timestamps, estimated_phi, estimated_theta, estimated_psi):
         row=3,
         col=1,
     )
-    fig.update_yaxes(title_text="Yaw angle [deg]", row=1, col=1)
+    fig.update_yaxes(title_text="Yaw angle [deg]", row=3, col=1)
 
-    fig.write_html("chapter13_4_estimating_attitude_with_sensorfusion.html")
+    fig.write_html("chapter13.4_estimating_attitude_with_sensorfusion.html")
 
 
 def kalman_filter(prev_x_estimate, prev_P_estimate, A):
@@ -250,7 +254,7 @@ def kalman_filter(prev_x_estimate, prev_P_estimate, A):
 def acceleration_to_euler_angles(ax, ay):
     theta = math.asin(ax / GRAVITATIONAL_ACCEL)
     phi = math.asin((-1 * ay) / (GRAVITATIONAL_ACCEL * math.cos(theta)))
-    return EulerAngles(theta, phi, 0)
+    return EulerAngles(phi, theta, 0)
 
 
 def euler_angles_to_quaternion(euler_angles):
@@ -265,9 +269,9 @@ def euler_angles_to_quaternion(euler_angles):
     return np.matrix(
         [
             [cos_phi * cos_theta * cos_psi + sin_phi * sin_theta * sin_psi],
-            [sin_phi * cos_theta * cos_psi + sin_phi * sin_theta * sin_psi],
+            [sin_phi * cos_theta * cos_psi - cos_phi * sin_theta * sin_psi],
             [cos_phi * sin_theta * cos_psi + sin_phi * cos_theta * sin_psi],
-            [cos_phi * cos_theta * sin_psi + sin_phi * sin_theta * cos_psi],
+            [cos_phi * cos_theta * sin_psi - sin_phi * sin_theta * cos_psi],
         ]
     )
 
@@ -296,6 +300,7 @@ if __name__ == "__main__":
     estimated_psi = np.zeros(NUM_GYRO_MEAS)
     timestamps = np.zeros(NUM_GYRO_MEAS)
 
+    # All Euler angles are 0 at the start
     prev_x_estimate = np.matrix([[1], [0], [0], [0]])
     prev_P_estimate = np.identity(4)
 
