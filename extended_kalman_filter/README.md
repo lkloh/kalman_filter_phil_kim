@@ -2,7 +2,7 @@
 
 ## Introduction
 
-After 50 years of the Kalman Filter's introduction, most new papers published about it fall into these categories:
+50 years after the Kalman Filter's development, most new papers published about it fall into these categories:
 * New applications for it - most of the papers
 * Expansion and improvement of the Kalman filter algorithm itself, mostly when applied to a non-linear system
 
