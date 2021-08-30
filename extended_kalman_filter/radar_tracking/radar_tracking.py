@@ -12,13 +12,40 @@ NUM_SAMPLES = 100
 DELTA_TIME = 0.5
 
 def plot_results(saved_timestamps, saved_estimated_positions, saved_estimated_velocity, saved_estimated_altitude):
-    pass
+    fig = make_subplots(
+        rows=3,
+        cols=1,
+        x_title="Time (s)",
+        subplot_titles=(
+            "x-position",
+            "Velocity",
+            "Altitude"
+        ),
+        shared_yaxes=True,
+    )
+    fig.update_layout(
+        title="Radar EKF"
+    )
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_estimated_positions,
+            name="Estimated x-position",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Estimated x-position", row=1, col=1)
+
+    fig.write_html("chapter14.4_radar_tracking.html")
 
 def run_ekf():
     saved_timestamps = np.zeros(NUM_SAMPLES)
     saved_estimated_positions = np.zeros(NUM_SAMPLES)
-    saved_estimated_velocity = np.zeros(NUM_SAMPLES)
-    saved_estimated_altitude = np.zeros(NUM_SAMPLES)
+    saved_estimated_velocities = np.zeros(NUM_SAMPLES)
+    saved_estimated_altitudes = np.zeros(NUM_SAMPLES)
 
     predicted_x_position = 0
     for i in range(NUM_SAMPLES):
@@ -29,13 +56,14 @@ def run_ekf():
 
         saved_timestamps[i] = i * DELTA_TIME
         saved_estimated_positions[i] = estimated_pos
-        saved_estimated_velocity[i] = estimated_vel
-        saved_estimated_altitude[i] = estimated_alt
+        saved_estimated_velocities[i] = estimated_vel
+        saved_estimated_altitudes[i] = estimated_alt
 
     return [
+        saved_timestamps,
         saved_estimated_positions,
-        saved_estimated_velocity,
-        saved_estimated_altitude,
+        saved_estimated_velocities,
+        saved_estimated_altitudes,
     ]
 
 
