@@ -1,5 +1,7 @@
 # Radar Tracking
 
+[comment]: *******************************************************************
+
 ## Problem Statement
 
 This is an example of the extended Kalman Filter. 
@@ -26,14 +28,18 @@ However, the velocity and altitude are unknown.
                 /-------------|
               radar
 
+[comment]: *******************************************************************
+
 ## System model
 
-System state variables are:
+### System state variables
 ```
     [horizontal distance]   [x1]
 x = [velocity           ] = [x2]
     [altitude           ]   [x3]
 ```
+
+### State transition model
 
 Since velocity and altitude are constant, the equation of motion becomes: 
 ```
@@ -69,7 +75,7 @@ We derive the system in this way:
   has some slight variations due to various sources of error. This is modeled
   as system noise `w2`: `rate_of_change(altitude) = rate_of_change(x3) = w2`.
   
-## Measurement model
+### State-to-measurement model
 
 The physical quantity measured by the radar is slant range, defined as:
 ```
@@ -82,5 +88,52 @@ where `h(x) = sqrt(x1*x1 + x3*x3)`.
 
 The system model is not linear, so we cannot apply the linear Kalman filter to this problem.
 
+[comment]: *******************************************************************
 
+## Extended Kalman filter function
 
+Since the system model is linear, a linear Kalman filter is used for the prediction
+of the state variable in this extended Kalman filter algorithm.
+
+```
+\hat{x_predicted}_{k+1} = f(\hat{x}_k)
+```
+which is equivalent to
+```
+\hat{x_predicted}_{k+1} = A * \hat{x}_k
+```
+The matrix `A` is used in place of the Jacobian of the function `f(x)`.
+
+The extended Kalman filter is an algorithm for a discrete system:
+```
+x_{k+1} = f(x_k) + w_k
+z_k     = h(x_k) + v_k
+```
+and the following functions are equivalent in the linear Kalman filter:
+```
+A * x_k is equivalent to f(x_k)
+H * x_k is equivalent to h(x_k)
+```
+
+### System model
+
+The system model linear but not discrete, so we discretized it with Euler integration within the interval `dt`.
+Numerical integration could be used if a more accurate result is needed.
+```
+              [0  1  0]
+A = I_{3x3} + [0  0  0] * dt
+              [0  0  0]
+```
+
+### Measurement model
+
+The measurement model is non-linear, so matrix `H` is obtained by calculating the Jacobian of 
+the state-to-measurement equation:
+
+```
+H = [dh/dx1  dh/dx2  dh/dx3]
+
+    [       x1                   x2        ]
+  = [----------------  0  ---------------- ]
+    [sqrt(x1^2 + x3^2)    sqrt(x1^2 + x3^2)]
+```
