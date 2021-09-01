@@ -25,8 +25,39 @@ Q = np.matrix(
 )
 R = 10
 
+def plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar):
+    fig = make_subplots(
+        rows=1,
+        cols=1,
+        x_title="Time (s)",
+    )
+    fig.update_layout(title="Radar EKF")
 
-def plot_results(
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_estimated_radar,
+            name="Estimated radar",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_measured_radar,
+            name="Measured radar",
+            mode="markers",
+        ),
+        row=1,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Estimated x-position", row=1, col=1)
+
+    fig.write_html("chapter14.4_measured_vs_estimated_radar_tracking.html")
+
+def plot_state_variables(
     saved_timestamps,
     saved_estimated_positions,
     saved_estimated_velocity,
@@ -39,7 +70,7 @@ def plot_results(
         subplot_titles=("x-position", "Velocity", "Altitude"),
         shared_yaxes=True,
     )
-    fig.update_layout(title="Radar EKF")
+    fig.update_layout(title="Radar EKF - state variables")
 
     fig.append_trace(
         plotly_go.Scatter(
@@ -53,11 +84,37 @@ def plot_results(
     )
     fig.update_yaxes(title_text="Estimated x-position", row=1, col=1)
 
-    fig.write_html("chapter14.4_radar_tracking.html")
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_estimated_velocity,
+            name="Estimated velocity",
+            mode="markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Estimated velocity", row=2, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_estimated_altitude,
+            name="Estimated altitude",
+            mode="markers",
+        ),
+        row=3,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Estimated altitude", row=3, col=1)
+
+    fig.write_html("chapter14.4_radar_tracking_state_vars.html")
 
 
 def run_ekf():
     saved_timestamps = np.zeros(NUM_SAMPLES)
+    saved_measured_radar = np.zeros(NUM_SAMPLES)
+    saved_estimated_radar = np.zeros(NUM_SAMPLES)
     saved_estimated_positions = np.zeros(NUM_SAMPLES)
     saved_estimated_velocities = np.zeros(NUM_SAMPLES)
     saved_estimated_altitudes = np.zeros(NUM_SAMPLES)
@@ -80,10 +137,15 @@ def run_ekf():
         )
 
         # Save results for plotting
+        estimated_xpos = x_estimate[0,0]
+        estimate_vel = x_estimate[1,0]
+        estimated_alt = x_estimate[2,0]
         saved_timestamps[i] = i * DELTA_TIME
-        saved_estimated_positions[i] = x_estimate[0,0]
-        saved_estimated_velocities[i] = x_estimate[1,0]
-        saved_estimated_altitudes[i] = x_estimate[2,0]
+        saved_measured_radar[i] = z
+        saved_estimated_radar[i] = math.sqrt(math.pow(estimated_xpos,2) + math.pow(estimated_alt,2))
+        saved_estimated_positions[i] = estimated_xpos
+        saved_estimated_velocities[i] = estimate_vel
+        saved_estimated_altitudes[i] = estimated_alt
 
         # update for next iteration
         previous_x_estimate = x_estimate
@@ -91,6 +153,8 @@ def run_ekf():
 
     return [
         saved_timestamps,
+        saved_measured_radar,
+        saved_estimated_radar,
         saved_estimated_positions,
         saved_estimated_velocities,
         saved_estimated_altitudes,
@@ -100,12 +164,15 @@ def run_ekf():
 if __name__ == "__main__":
     [
         saved_timestamps,
+        saved_measured_radar,
+        saved_estimated_radar,
         saved_estimated_positions,
         saved_estimated_velocity,
         saved_estimated_altitude,
     ] = run_ekf()
 
-    plot_results(
+    plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar)
+    plot_state_variables(
         saved_timestamps,
         saved_estimated_positions,
         saved_estimated_velocity,

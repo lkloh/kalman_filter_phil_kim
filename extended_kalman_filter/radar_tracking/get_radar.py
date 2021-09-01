@@ -13,7 +13,7 @@ def generate_radar_measurement(dt, predicted_state):
 
     estimated_x_position = predicted_x_pos + true_xvelocity * dt
     measurement_noise_of_radar = estimated_x_position * random.triangular(
-        0, 0.05, 0.025
+        -0.1, 0.1, 0
     )
     return (
         math.sqrt(
