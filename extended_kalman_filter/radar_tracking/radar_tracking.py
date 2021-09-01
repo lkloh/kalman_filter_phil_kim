@@ -25,6 +25,7 @@ Q = np.matrix(
 )
 R = 10
 
+
 def plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar):
     fig = make_subplots(
         rows=1,
@@ -38,7 +39,7 @@ def plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar):
             x=saved_timestamps,
             y=saved_estimated_radar,
             name="Estimated radar",
-            mode="markers",
+            mode="lines+markers",
         ),
         row=1,
         col=1,
@@ -48,7 +49,7 @@ def plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar):
             x=saved_timestamps,
             y=saved_measured_radar,
             name="Measured radar",
-            mode="markers",
+            mode="lines+markers",
         ),
         row=1,
         col=1,
@@ -56,6 +57,7 @@ def plot_radar(saved_timestamps, saved_measured_radar, saved_estimated_radar):
     fig.update_yaxes(title_text="Estimated x-position", row=1, col=1)
 
     fig.write_html("chapter14.4_measured_vs_estimated_radar_tracking.html")
+
 
 def plot_state_variables(
     saved_timestamps,
@@ -137,12 +139,14 @@ def run_ekf():
         )
 
         # Save results for plotting
-        estimated_xpos = x_estimate[0,0]
-        estimate_vel = x_estimate[1,0]
-        estimated_alt = x_estimate[2,0]
+        estimated_xpos = x_estimate[0, 0]
+        estimate_vel = x_estimate[1, 0]
+        estimated_alt = x_estimate[2, 0]
         saved_timestamps[i] = i * DELTA_TIME
         saved_measured_radar[i] = z
-        saved_estimated_radar[i] = math.sqrt(math.pow(estimated_xpos,2) + math.pow(estimated_alt,2))
+        saved_estimated_radar[i] = math.sqrt(
+            math.pow(estimated_xpos, 2) + math.pow(estimated_alt, 2)
+        )
         saved_estimated_positions[i] = estimated_xpos
         saved_estimated_velocities[i] = estimate_vel
         saved_estimated_altitudes[i] = estimated_alt
