@@ -70,13 +70,13 @@ def run_ekf():
             [1100],
         ]
     )
-    previous_P_estimate = np.matrix([[10, 10, 10]])
+    previous_P_estimate = 10 * np.identity(3)
 
     for i in range(NUM_SAMPLES):
         z = generate_radar_measurement(DELTA_TIME, previous_x_estimate)
 
         [x_estimate, P_estimate] = radar_ekf.run_kalman_filter(
-            z, previous_x_estimate, previous_P_estimate, NUM_SAMPLES, DELTA_TIME
+            z, previous_x_estimate, previous_P_estimate
         )
 
         # update for next iteration
