@@ -79,15 +79,15 @@ def run_ekf():
             z, previous_x_estimate, previous_P_estimate
         )
 
+        # Save results for plotting
+        saved_timestamps[i] = i * DELTA_TIME
+        saved_estimated_positions[i] = x_estimate[0,0]
+        saved_estimated_velocities[i] = x_estimate[1,0]
+        saved_estimated_altitudes[i] = x_estimate[2,0]
+
         # update for next iteration
         previous_x_estimate = x_estimate
         previous_P_estimate = P_estimate
-
-        # Save results for plotting
-        saved_timestamps[i] = i * DELTA_TIME
-        saved_estimated_positions[i] = x_estimate[0]
-        saved_estimated_velocities[i] = x_estimate[1]
-        saved_estimated_altitudes[i] = x_estimate[2]
 
     return [
         saved_timestamps,

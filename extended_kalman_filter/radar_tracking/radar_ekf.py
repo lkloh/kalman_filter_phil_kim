@@ -18,37 +18,29 @@ class RadarEKF:
         self.Q = Q
         self.R = R
 
-    def hx(self, estimated_state_variable):
+    def hx(self, estimated_state):
         """
         Non-linear function to compute radar from state variable
         """
-        return math.sqrt(
-            math.pow(estimated_state_variable.x_position, 2)
-            + math.pow(estimated_state_variable.altitude, 2)
-        )
+        estimated_x_pos = estimated_state[0,0]
+        estimated_alt = estimated_state[2,0]
+        return math.sqrt(math.pow(estimated_x_pos, 2) + math.pow(estimated_alt, 2))
+
 
     def compute_H_jacobian(self, predicted_state):
         """
         Compute the Jacobian matrix from the state-to-measurement function
         """
-        H = np.zeros(3)
-
-        predicted_x_pos = predicted_state[0]
-        predicted_alt = predicted_state[2]
-
+        predicted_x_pos = predicted_state[0,0]
+        predicted_alt = predicted_state[2,0]
         denominator = math.sqrt(
             math.pow(predicted_x_pos, 2) + math.pow(predicted_alt, 2)
         )
+        return np.matrix([predicted_x_pos / denominator, 0, predicted_alt / denominator])
 
-        H[0] = predicted_x_pos / denominator
-        H[1] = 0
-        H[2] = predicted_alt / denominator
-
-        return H
 
     def run_kalman_filter(self, z, prev_x_estimate, prev_P_estimate):
         H_jacob = self.compute_H_jacobian(prev_x_estimate)
-        print(H_jacob)
 
         # Step I: Predict state
         x_predict = self.A * prev_x_estimate
@@ -56,7 +48,6 @@ class RadarEKF:
         P_predict = self.A * prev_P_estimate * self.A.transpose() + self.Q
 
         # Step II: Compute Kalman Gain
-        # print(P_predict)
         K = (
             P_predict
             * H_jacob.transpose()
