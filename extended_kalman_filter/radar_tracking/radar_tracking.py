@@ -4,12 +4,26 @@ import numpy as np
 import math
 from plotly.subplots import make_subplots
 import plotly.graph_objects as plotly_go
-from scipy.io import loadmat
 from get_radar import generate_radar_measurement
-from radar_ekf import run_radar_ekf
+from radar_ekf import RadarEKF
 
 NUM_SAMPLES = 100
 DELTA_TIME = 0.5
+A = np.identity(3) + DELTA_TIME * np.matrix(
+    [
+        [0, 1, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+    ]
+)
+Q = np.matrix(
+    [
+        [0, 0, 0],
+        [0, 0.001, 0],
+        [0, 0, 0.001],
+    ]
+)
+R = 10
 
 
 def plot_results(
@@ -48,21 +62,32 @@ def run_ekf():
     saved_estimated_velocities = np.zeros(NUM_SAMPLES)
     saved_estimated_altitudes = np.zeros(NUM_SAMPLES)
 
-    predicted_x_position = 0
+    radar_ekf = RadarEKF(A, Q, R)
+    previous_x_estimate = np.matrix(
+        [
+            [0],
+            [90],
+            [1100],
+        ]
+    )
+    previous_P_estimate = np.matrix([[10, 10, 10]])
+
     for i in range(NUM_SAMPLES):
-        [radar_measurement, estimated_x_position] = generate_radar_measurement(
-            DELTA_TIME, predicted_x_position
-        )
-        predicted_x_position = estimated_x_position
+        z = generate_radar_measurement(DELTA_TIME, previous_x_estimate)
 
-        [estimated_pos, estimated_vel, estimated_alt] = run_radar_ekf(
-            radar_measurement, NUM_SAMPLES, DELTA_TIME
+        [x_estimate, P_estimate] = radar_ekf.run_kalman_filter(
+            z, previous_x_estimate, previous_P_estimate, NUM_SAMPLES, DELTA_TIME
         )
 
+        # update for next iteration
+        previous_x_estimate = x_estimate
+        previous_P_estimate = P_estimate
+
+        # Save results for plotting
         saved_timestamps[i] = i * DELTA_TIME
-        saved_estimated_positions[i] = estimated_pos
-        saved_estimated_velocities[i] = estimated_vel
-        saved_estimated_altitudes[i] = estimated_alt
+        saved_estimated_positions[i] = x_estimate[0]
+        saved_estimated_velocities[i] = x_estimate[1]
+        saved_estimated_altitudes[i] = x_estimate[2]
 
     return [
         saved_timestamps,

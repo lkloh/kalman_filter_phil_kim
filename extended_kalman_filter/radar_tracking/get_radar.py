@@ -2,7 +2,6 @@
 import random
 import math
 
-
 def generate_radar_measurement(dt, predicted_x_position):
     true_xvelocity = (
         100 + random.triangular(0, 100, 50) + 5 * random.triangular(0, 1, 0.5)
@@ -20,4 +19,4 @@ def generate_radar_measurement(dt, predicted_x_position):
         + measurement_noise_of_radar
     )
 
-    return [measured_radar, estimated_x_position]
+    return measured_radar
