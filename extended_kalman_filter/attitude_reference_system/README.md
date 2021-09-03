@@ -50,3 +50,49 @@ z = [0  1  0][theta] + v
   = H*x + v           
 ```
 This is a linear expression, so we can use it as-is.
+
+## Extended Kalman filter function
+
+To linearize the system model expression, we take it's Jacobian. 
+
+The system model is given by:
+```
+       [f1(x)]        
+f(x) = [f2(x)]
+       [f3(x)]                       
+        
+       [p + q*sin(phi)*tan(theta) + r*cos(phi)*tan(theta)] 
+     = [q*cos(phi) - r*sin(phi)                          ]
+       [q*sin(phi)/cos(theta) + r*cos(phi)/cos(theta)    ]                     
+```
+
+and it's Jacobian is defined as:
+```
+    [d f1   d f1     d f1 ]
+    [-----  -------  -----]
+    [d phi  d theta  d psi]
+    [                     ]
+    [d f2   d f2     d f2 ]
+J = [-----  -------  -----]
+    [d phi  d theta  d psi]
+    [                     ]
+    [d f3   d f3     d f3 ]
+    [-----  -------  -----]
+    [d phi  d theta  d psi]
+```
+To discretize the Jacobian for use in EKF, we use Euler integration within the interval `dt`.
+A more accurate approach would use numerical integration.
+```
+    [1  0  0]
+A = [0  1  0] + J * dt
+    [0  0  1] 
+```
+
+In general, getting the derivative of a system model to compute the Jacobian is straightforward.
+For a simpler system, the derivatives can be obtained analytically.
+For a more complex system, numerical methods are needed to obtain the Jacobian,
+which could result in higher chances of errors.
+
+## Conclusions
+
+
