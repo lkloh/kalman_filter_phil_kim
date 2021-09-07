@@ -18,8 +18,6 @@ ACCEL_WY = ACCEL_MATLAB_DATA["fy"][:, 0]
 ACCEL_WZ = ACCEL_MATLAB_DATA["fz"][:, 0]
 NUM_ACCEL_MEAS = len(ACCEL_WX)
 
-NUM_SAMPLES = NUM_GYRO_MEAS
-
 GRAVITATIONAL_ACCEL = 9.8
 
 
@@ -50,6 +48,7 @@ class Acceleration:
 
 def get_accelerometer_measurements(index):
     return Acceleration(ACCEL_WX[index], ACCEL_WY[index], ACCEL_WZ[index])
+
 
 def compute_euler_accel(accel):
     theta = math.asin(accel.ax / GRAVITATIONAL_ACCEL)
