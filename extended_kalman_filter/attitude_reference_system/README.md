@@ -95,4 +95,12 @@ which could result in higher chances of errors.
 
 ## Conclusions
 
+The state variable for horizontal attitude could be transform into the quaternion
+to linearize it, allowing use of the linear Kalman filter to estimate attitude.
 
+However, it is usually not possible to transform a system model to a linear form.
+But the extended Kalman Filter works well with most non-linear systems, such as in this case.
+We compute the Jacobian of the previous estimate of the non-linear system model 
+as a linear substitude for its state-to-measurement matrix.
+
+There is always a change for the EKF to diverge, but it usually shows acceptable performance.
