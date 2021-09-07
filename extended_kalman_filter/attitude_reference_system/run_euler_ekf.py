@@ -14,15 +14,18 @@ def run_ekf():
     saved_theta = np.zeros(meas.NUM_SAMPLES)
     saved_psi = np.zeros(meas.NUM_SAMPLES)
 
-    prev_x_estimate = np.matrix([[0], [0], [0]])
+    prev_x_estimate = np.array([[0], [0], [0]])
     prev_P_estimate = 10 * np.identity(3)
 
     for idx in range(meas.NUM_SAMPLES):
         angular_vel = meas.get_gyro_measurements(idx)
         accel = meas.get_accelerometer_measurements(idx)
-        z = meas.compute_euler_accel(accel)
+        euler_accel = meas.compute_euler_accel(accel)
 
-
+        z = np.array([
+            [euler_accel.phi],
+            [euler_accel.theta],
+        ])
         [new_x_estimate, new_P_estimate] = euler_ekf.run_kalman_filter(
             z, prev_x_estimate, prev_P_estimate, angular_vel, meas.DELTA_TIME
         )
