@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 from scipy.io import loadmat
+import numpy as np
+import math
 
 # load data
 GYRO_MATLAB_DATA = loadmat("../../data/moving_helicopter_measurements/ArsGyro.mat")
@@ -48,3 +50,8 @@ class Acceleration:
 
 def get_accelerometer_measurements(index):
     return Acceleration(ACCEL_WX[index], ACCEL_WY[index], ACCEL_WZ[index])
+
+def compute_euler_accel(accel):
+    theta = math.asin(accel.ax / GRAVITATIONAL_ACCEL)
+    phi = math.asin((-1 * accel.ay) / (GRAVITATIONAL_ACCEL * math.cos(theta)))
+    return EulerAngles(phi, theta)
