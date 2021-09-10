@@ -30,12 +30,26 @@ def compute_sigma_points(xm, P, kappa):
         sigma_points[n_vars + i + 1, :] = xm - U[i, :]
         weights[n_vars + i + 1] = 1 / (2 * (n_vars + kappa))
 
-    print(sigma_points)
-    print(weights)
-    print(U)
+    return [sigma_points, weights]
+
+
+def unscented_transformation(sigma_points, weights):
+    [n_sigma_pts, n_state_vars] = sigma_points.shape
+
+    new_xm = np.zeros(n_state_vars)
+    for i in range(n_sigma_pts):
+        new_xm += weights[i] * sigma_points[i, :]
+
+    new_P = np.zeros(shape=(n_state_vars, n_state_vars))
+    for i in range(n_sigma_pts):
+        temp = sigma_points[i, :] - new_xm
+        new_P += weights[i] * (temp @ temp.transpose())
+
+    return [new_xm, new_P]
 
 
 if __name__ == "__main__":
     xm = np.array([1, 2, 3])
     P = 1.2 * np.eye(3)
-    compute_sigma_points(xm, P, 2)
+    [sigma_points, weights] = compute_sigma_points(xm, P, 2)
+    [new_xm, new_P] = unscented_transformation(sigma_points, weights)
