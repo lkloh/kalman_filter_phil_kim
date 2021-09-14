@@ -19,20 +19,15 @@ def run_ukf():
     saved_velocity = np.zeros(N_RADAR_SAMPLES)
     saved_altitude = np.zeros(N_RADAR_SAMPLES)
 
-    prev_state = np.array([
-        [0],
-        [90],
-        [1100]
-    ])
+    prev_state = np.array([0, 90, 1100])
     prev_covariance = 100 * np.eye(3)
 
     for i in range(N_RADAR_SAMPLES):
         z = generate_radar_measurement(prev_state, DELTA_TIME)
         ukf = RadarUKF(Q, R, KAPPA, DELTA_TIME, N_STATE_VARS, N_MEASUREMENT_VARS)
-        current_state = ukf.run_ukf(z)
+        current_state = ukf.run_ukf(z, prev_state, prev_covariance)
 
         saved_timestamps[i] = i * DELTA_TIME
-
         prev_state = current_state
 
     return [saved_timestamps, saved_position,  saved_velocity, saved_altitude]

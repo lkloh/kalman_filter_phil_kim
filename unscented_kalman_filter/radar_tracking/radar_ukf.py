@@ -31,14 +31,13 @@ class RadarUKF:
         self.n_measurements = n_measurements
 
 
-    def run_ukf(self, z):
-        prev_x = np.array([0, 90, 100]).transpose()
-        prev_P = 100 * np.eye(3)
-
+    def run_ukf(self, z, prev_x, prev_P):
         [sigma, weights] = compute_sigma_points(prev_x, prev_P, self.kappa)
         f_sigma = np.zeros(shape=(2 * self.n_state_vars + 1, self.n_state_vars))
         for idx in range(2 * self.n_state_vars + 1):
             f_sigma[idx,:] = fx(sigma[idx,:].transpose(), self.dt)
+
+
 
         return np.zeros(3)
 
