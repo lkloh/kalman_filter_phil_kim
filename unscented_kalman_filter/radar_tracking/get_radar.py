@@ -3,8 +3,8 @@ import random
 import math
 
 
-def generate_radar_measurement(dt, predicted_state):
-    predicted_x_pos = predicted_state[0, 0]
+def generate_radar_measurement(predicted_state, dt):
+    predicted_x_pos = predicted_state[0]
 
     true_xvelocity = (
         100 + random.triangular(0, 100, 50) + 5 * random.triangular(0, 1, 0.5)
