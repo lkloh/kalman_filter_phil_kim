@@ -12,7 +12,7 @@ kappa: arbitrary constant
 def compute_sigma_points(xm, P, kappa):
     n_vars = len(xm)
     sigma_points = np.zeros(shape=(2 * n_vars + 1, n_vars))
-    weights = np.zeros(shape=(2 * n_vars + 1, 1))
+    weights = np.zeros(2 * n_vars + 1)
 
     for i in range(n_vars):
         sigma_points[i, 0] = xm[i]
@@ -31,7 +31,7 @@ def compute_sigma_points(xm, P, kappa):
     return [sigma_points, weights]
 
 
-def unscented_transformation(sigma_points, weights):
+def unscented_transformation(sigma_points, weights, noise_covariance):
     [n_sigma_pts, n_state_vars] = sigma_points.shape
 
     new_xm = np.zeros(n_state_vars)
@@ -43,4 +43,4 @@ def unscented_transformation(sigma_points, weights):
         temp = sigma_points[i, :] - new_xm
         new_P += weights[i] * (temp @ temp.transpose())
 
-    return [new_xm, new_P]
+    return [new_xm, new_P + noise_covariance]
