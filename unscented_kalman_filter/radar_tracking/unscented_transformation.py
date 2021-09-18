@@ -31,7 +31,7 @@ def compute_sigma_points(xm, P, kappa):
     return [sigma_points, weights]
 
 
-def run_unscented_transformation(sigma_points, weights):
+def unscented_transformation(sigma_points, weights):
     [n_sigma_pts, n_state_vars] = sigma_points.shape
 
     new_xm = np.zeros(n_state_vars)
