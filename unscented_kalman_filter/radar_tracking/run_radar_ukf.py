@@ -23,10 +23,14 @@ def run_ukf():
 
     for i in range(N_RADAR_SAMPLES):
         z = generate_radar_measurement(prev_state, DELTA_TIME)
+        #print(z)
         # ukf = RadarUKF(Q, R, KAPPA, DELTA_TIME, N_STATE_VARS, N_MEASUREMENT_VARS)
         # current_state = ukf.run_ukf(z, prev_state, prev_covariance)
 
         saved_timestamps[i] = i * DELTA_TIME
+        prev_state[0] = z
+
+        print(z)
         # prev_state = current_state
 
     return [saved_timestamps, saved_position,  saved_velocity, saved_altitude]
