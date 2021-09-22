@@ -35,7 +35,7 @@ def run_ukf():
             N_STATE_VARS,
             N_MEAS,
         )
-        estimated_state = ukf.run_kalman_filter(meas, gyro_meas)
+        estimated_state = ukf.run_kalman_filter(meas, gyro_meas, prev_state, prev_error_covariance)
 
 
 if __name__ == "__main__":
