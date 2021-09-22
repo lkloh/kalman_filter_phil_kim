@@ -11,7 +11,7 @@ KAPPA = 0
 N_STATE_VARS = 3  # state vars are: x-position,
 N_MEASUREMENT_VARS = 1
 DELTA_TIME = 0.05
-N_RADAR_SAMPLES = 10
+N_RADAR_SAMPLES = 20
 
 
 def run_ukf():

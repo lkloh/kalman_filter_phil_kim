@@ -57,8 +57,8 @@ class RadarUKF:
         # Compute kalman gain
         cov_state_meas = np.zeros(shape=(self.n_state_vars, self.n_measurements))
         for k in range(2 * self.n_state_vars + 1):
-            tmp_state_gain = (f_sigma[:, k] - predicted_state).reshape(
-                self.n_state_vars, 1
+            tmp_state_gain = (
+                f_sigma[:, k].reshape(self.n_state_vars, 1) - predicted_state
             )
             tmp_meas_gain = h_sigma[:, k] - predicted_meas
             cov_state_meas += (weights[k] * tmp_state_gain @ tmp_meas_gain).reshape(
