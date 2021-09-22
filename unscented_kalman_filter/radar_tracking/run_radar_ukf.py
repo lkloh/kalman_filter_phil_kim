@@ -3,6 +3,8 @@
 import numpy as np
 from get_radar import generate_radar_measurement
 from ukf import RadarUKF
+from plotly.subplots import make_subplots
+import plotly.graph_objects as plotly_go
 
 Q = 0.01 * np.eye(3)  # Covariance of of state transition noise
 R = 100  # Covariance of measurement noise
@@ -11,7 +13,64 @@ KAPPA = 0
 N_STATE_VARS = 3  # state vars are: x-position,
 N_MEASUREMENT_VARS = 1
 DELTA_TIME = 0.05
-N_RADAR_SAMPLES = 20
+N_RADAR_SAMPLES = 50
+
+
+def plot_estimates(
+    saved_timestamps, saved_position, saved_velocity, saved_altitude, saved_measurements
+):
+    fig = make_subplots(
+        rows=4,
+        cols=1,
+        x_title="Time (s)",
+    )
+    fig.update_layout(title="Estimated radar")
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_measurements,
+            name="Slant measurements [m]",
+            mode="lines+markers",
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_position,
+            name="Estimated x-position [m]",
+            mode="lines+markers",
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_velocity,
+            name="Estimated velocity [m/s]",
+            mode="lines+markers",
+        ),
+        row=3,
+        col=1,
+    )
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_altitude,
+            name="Estimated altitude [m]",
+            mode="lines+markers",
+        ),
+        row=4,
+        col=1,
+    )
+
+    fig.write_html("chapter15.4_radar_tracking.html")
 
 
 def run_ukf():
@@ -58,3 +117,11 @@ if __name__ == "__main__":
         saved_altitude,
         saved_measurements,
     ] = run_ukf()
+
+    plot_estimates(
+        saved_timestamps,
+        saved_position,
+        saved_velocity,
+        saved_altitude,
+        saved_measurements,
+    )
