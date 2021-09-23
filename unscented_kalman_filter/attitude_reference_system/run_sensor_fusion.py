@@ -19,7 +19,7 @@ KAPPA = 0
 
 def run_ukf():
     prev_state = np.array([[0], [0], [0]])
-    prev_error_covariance = np.eye(3)
+    prev_state_error_covariance = np.eye(3)
 
     for i in range(ats.NUM_GYRO_MEAS):
         gyro_meas = ats.get_gyro_measurements(i)
@@ -35,7 +35,10 @@ def run_ukf():
             N_STATE_VARS,
             N_MEAS,
         )
-        estimated_state = ukf.run_kalman_filter(meas, gyro_meas, prev_state, prev_error_covariance)
+        [estimated_state, estimated_state_error_covariance] = ukf.run_kalman_filter(
+            meas, gyro_meas, prev_state, prev_state_error_covariance
+        )
+        print(estimated_state)
 
 
 if __name__ == "__main__":
