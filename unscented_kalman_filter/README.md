@@ -94,7 +94,24 @@ sigma points and weights.
 As an example, a 2D state variable `x = {x1, x2}` has `5 (= 2 x 2 + 1)` sigma points and weights. 
 The original distribution of `x` can be represented by just these 5 points, 
 
+## Usage
 
+In summary, the UKF is a non-linear Kalman filter that operates by modeling the probability distribution of a 
+given non-linear function, instead of modeling the function itself. It computes the mean and covariance
+of the function using statistical techniques.
+
+The UKF is thus a good substitude for an EKF when the linearized model of the Jacobian is
+unstable or hard to obtain. It is also practical as it's algorithm is not excessively complicated
+to implement. 
+
+In general, it is preferable to use the EKF when it is easy to obtain the Jacobian of a non-linear
+system in an analytical way. This saves on computational time. 
+
+When it is hard to obtain the Jacobian analytically, or there is a change the EKF could diverge,
+it is preferable to use the UKF. 
+
+When one is uncertain about whether to use the EKF or UKF, comparing the results from
+both filters is the best way to choose between them.
 
 
 
