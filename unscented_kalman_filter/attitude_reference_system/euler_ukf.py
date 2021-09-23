@@ -10,10 +10,14 @@ def fx(estimated_state, angular_rates, dt):
 
     p = angular_rates.p
     q = angular_rates.q
+    r = angular_rates.r
 
-    xdot = np.zeros([[0], [0], [0]])
-    xdot[0][1] = p + q * math.sin(phi)
-    # tbd
+    xdot = np.zeros(3)
+    xdot[0] = (
+        p + q * math.sin(phi) * math.tan(theta) + r * math.cos(phi) * math.tan(theta)
+    )
+    xdot[1] = q * math.cos(phi) - r * math.sin(phi)
+    xdot[2] = q * math.sin(phi) / math.cos(theta) + r * math.cos(phi) / math.cos(theta)
 
     return estimated_state + xdot * dt
 
