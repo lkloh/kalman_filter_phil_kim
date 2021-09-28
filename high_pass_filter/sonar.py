@@ -9,16 +9,19 @@ SONAR_MATLAB_DATA = loadmat("../data/SonarAlt.mat")
 SONAR_DATA = SONAR_MATLAB_DATA["sonarAlt"][0]
 N_SONAR_SAMPLES = len(SONAR_DATA)
 DT = 0.01
-
-ALPHA = 0.7
-TAU = 1.0 / ALPHA
+TAU = 0.0233
 
 
-def plot_results(saved_timestamps, saved_input_measurements, saved_filter_output):
+def plot_results(
+    saved_timestamps,
+    saved_input_measurements,
+    saved_filtered_noise,
+    saved_measurements_minus_noise,
+):
     fig = make_subplots(
-        rows=1,
+        rows=2,
         cols=1,
-        x_title="Hihg-pass filter)",
+        x_title="High-pass filter)",
     )
     fig.update_layout(title="")
 
@@ -35,14 +38,36 @@ def plot_results(saved_timestamps, saved_input_measurements, saved_filter_output
     fig.append_trace(
         plotly_go.Scatter(
             x=saved_timestamps,
-            y=saved_filter_output,
-            name="Filtered output",
+            y=saved_filtered_noise,
+            name="Noise of sonar measurements",
             mode="lines+markers",
         ),
         row=1,
         col=1,
     )
-    # fig.update_yaxes(title_text="", row=1, col=1)
+    fig.update_yaxes(title_text="Altitude [m]", row=1, col=1)
+
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_input_measurements,
+            name="Input measurements",
+            mode="lines+markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.append_trace(
+        plotly_go.Scatter(
+            x=saved_timestamps,
+            y=saved_measurements_minus_noise,
+            name="Measurement - noise (low-pass filter)",
+            mode="lines+markers",
+        ),
+        row=2,
+        col=1,
+    )
+    fig.update_yaxes(title_text="Altitude [m]", row=2, col=1)
 
     fig.write_html("chapter16.5_high_pass_filter_sonar.html")
 
@@ -54,28 +79,45 @@ def high_pass_filter(input_measurement, prev_input, prev_output):
 
 def run_filter():
     saved_timestamps = np.zeros(N_SONAR_SAMPLES)
-    saved_input_measurements = np.zeros(N_SONAR_SAMPLES)
-    saved_filter_output = np.zeros(N_SONAR_SAMPLES)
+    saved_measurements = np.zeros(N_SONAR_SAMPLES)
+    saved_noise = np.zeros(N_SONAR_SAMPLES)
+    saved_measurements_minus_noise = np.zeros(N_SONAR_SAMPLES)
 
     prev_input = 0
     prev_output = 0
 
     for i in range(N_SONAR_SAMPLES):
         input_measurement = SONAR_DATA[i]
-        filtered_output = high_pass_filter(input_measurement, prev_input, prev_output)
+        filtered_noise = high_pass_filter(input_measurement, prev_input, prev_output)
 
         # save results
         saved_timestamps[i] = i * DT
-        saved_input_measurements[i] = input_measurement
-        saved_filter_output[i] = filtered_output
+        saved_measurements[i] = input_measurement
+        saved_noise[i] = filtered_noise
+        saved_measurements_minus_noise[i] = (input_measurement - filtered_noise)
 
         # Update state
         prev_input = input_measurement
-        prev_output = filtered_output
+        prev_output = filtered_noise
 
-    return [saved_timestamps, saved_input_measurements, saved_filter_output]
+    return [
+        saved_timestamps,
+        saved_measurements,
+        saved_noise,
+        saved_measurements_minus_noise,
+    ]
 
 
 if __name__ == "__main__":
-    [saved_timestamps, saved_input_measurements, saved_filter_output] = run_filter()
-    plot_results(saved_timestamps, saved_input_measurements, saved_filter_output)
+    [
+        saved_timestamps,
+        saved_input_measurements,
+        saved_filtered_noise,
+        saved_measurements_minus_noise,
+    ] = run_filter()
+    plot_results(
+        saved_timestamps,
+        saved_input_measurements,
+        saved_filtered_noise,
+        saved_measurements_minus_noise,
+    )
