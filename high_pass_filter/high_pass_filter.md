@@ -88,3 +88,42 @@ y{k+1} = -------------- y{k} + -------------- (u{k+1} - u{k})
 ```
 Compared to the low-pass filter, this requires the previous input `u{k}` in addition
 to the current input `u{k+1}`.
+
+## Relationship between high-pass and low-pass filters
+
+The transfer function for the low-pass filter is given as
+```
+         a
+G(s) = -----
+       s + a
+```
+and the transfer function of the high-pass filter is given as
+```
+         s
+G(s) = -----
+       s + a
+```
+Summing, we get:
+```
+G_low_pass(s) + G_high_pass(s) 
+
+  low_pass_output   high_pass_output
+= --------------- + ----------------
+     input               input
+     
+  total_output  
+= ------------
+     input
+
+    a       s
+= ----- + -----
+  s + a   s + a
+
+  a + s
+= -----
+  s + a
+  
+= 1  
+```
+Clearly the relationship between the low-pass and high-pass filters is complementary.
+
