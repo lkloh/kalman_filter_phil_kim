@@ -77,7 +77,7 @@ First find the limit of `G(s)` as `s -> ∞`:
 ``` 
                    a       a 
  lim G(s) = lim  ----- = ----- = 0
-s->∞        s->∞ s + a   ∞ + a
+ s->∞       s->∞ s + a   ∞ + a
 ```
 When the frequency of the input signal is high (`s -> ∞`), `G(s)` converges to 0. 
 This means the output `Y(s)` of the filter also converges to 0, meaning the high-frequency signal cannot pass through the filter. 
