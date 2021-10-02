@@ -92,11 +92,114 @@ The system works as follows:
 ```
 
 The algorithm of the complementary system has a feedback structure.
-But the complementary filter itself is not a feedback loop - 
-it is an open-loop that does the following:
+
+But the complementary filter itself is not to be a feedback loop - 
+it is supposed to be an open-loop that does the following:
 1. Filter noises with low-pass and high-pass filters
 2. Sum the results of filtering the noises. 
 
+## Checking that the algorithm is for a complementary filter
 
-  
-  
+First define the error `e` between the attitude angles from the accelerometer and gyro to be:
+```
+e = φm - φa
+```
+
+The attitude angle `φm` from the gyro is computed by integration in this manner:
+```
+      1    .
+φm = --- * φm
+      s 
+      
+      1    [ .        [       KI  ] ]
+   = --- * [ φg - e * [ KP + ---- ] ] 
+      s    [          [        s  ] ]
+      
+      1    [ .                 [       KI  ] ]
+   = --- * [ φg - (φm - φa)  * [ KP + ---- ] ] 
+      s    [                   [        s  ] ]    
+```
+
+Multiplying `s * s` to both sides and rearranging, we get:
+```
+ 2         2    1  [ .              [       KI  ] ]
+s  * φm = s  * --- [ φg - (φm - φa) [ KP + ---- ] ]
+                s  [                [        s  ] ]
+                
+            [ .              [       KI  ] ]   
+        = s [ φg - (φm - φa) [ KP + ---- ] ]
+            [                [        s  ] ]
+             
+            . 
+        = s φg - (φm - φa) * (s KP + KI)
+        
+            .
+        = s φg - (s KP + KI) φm + (s KP + KI) φa        
+```
+Rearranging, we get
+```
+[  2             ]        .
+[ s  + s KP + KI ] φm = s φg + (s KP + KI) φa
+```
+which is equivalent to
+```
+           s        .          s
+φm = -------------- φg + -------------- φa
+      2                   2
+     s  + s KP + KI      s  + s KP + KI
+      
+            2
+           s        [  1  .  ]     s KP + KI
+   = -------------- [ --- φg ] + -------------- φa
+      2             [  s     ]    2
+     s  + s KP + KI              s  + s KP + KI
+    
+```
+
+We can define a low-pass filter as
+```
+         s KP + KI  
+G(s) = --------------
+        2
+       s  + s KP + KI  
+```
+and then `1 - G(s)` becomes a high-pass filer of the form:
+```
+                 s KP + KI
+1 - G(s) = 1 - --------------
+                2
+               s  + s KP + KI  
+            
+           [  2            ]
+           [ s + s KP + KI ] - [ s KP + KI]  
+         = --------------------------------  
+                    2
+                   s  + s KP + KI    
+                 
+                 2  
+                s   
+         = --------------         
+            2
+           s  + s KP + KI   
+```
+Thus, we see that the final attitude from the system is:
+```
+                    [  1  .  ]
+φm = [ 1 - G(s) ] * [ --- φg ] + G(s) φa
+                    [  s     ]
+                    
+                        [  1  .  ]
+   = high-pass-filter * [ --- φg ] + low-pass-filter * φa 
+                        [  s     ]                 
+``` 
+
+where
+```
+ 1  .  
+--- φg
+ s
+```
+is the attitude obtained by integrating the angular rate measured from the gyroscope.
+
+For the equation for final attitude from the system, we see that the algorithm
+is a typical complementary filter (even if it looks like a feedback system at first glance).
