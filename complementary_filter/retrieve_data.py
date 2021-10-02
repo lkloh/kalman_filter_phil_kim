@@ -2,6 +2,7 @@
 
 from scipy.io import loadmat
 import math
+import utils
 
 # load data
 GYRO_MATLAB_DATA = loadmat("../data/moving_helicopter_measurements/ArsGyro.mat")
@@ -20,36 +21,15 @@ NUM_ACCEL_MEAS = len(ACCEL_WX)
 GRAVITATIONAL_ACCEL = 9.8
 
 
-class AngularVelocities:
-    def __init__(self, p, q, r):
-        self.p = p
-        self.q = q
-        self.r = r
-
-
 def get_gyro_measurements(index):
-    return AngularVelocities(GYRO_WX[index], GYRO_WY[index], GYRO_WZ[index])
-
-
-class EulerAngles:
-    def __init__(self, phi=None, theta=None, psi=None):
-        self.phi = phi  # roll
-        self.theta = theta  # pitch
-        self.psi = psi  # yaw
-
-
-class Acceleration:
-    def __init__(self, ax=None, ay=None, az=None):
-        self.ax = ax
-        self.ay = ay
-        self.az = az
+    return utils.AngularVelocities(GYRO_WX[index], GYRO_WY[index], GYRO_WZ[index])
 
 
 def get_accelerometer_measurements(index):
-    return Acceleration(ACCEL_WX[index], ACCEL_WY[index], ACCEL_WZ[index])
+    return utils.Acceleration(ACCEL_WX[index], ACCEL_WY[index], ACCEL_WZ[index])
 
 
 def compute_euler_accel(accel):
     theta = math.asin(accel.ax / GRAVITATIONAL_ACCEL)
     phi = math.asin((-1 * accel.ay) / (GRAVITATIONAL_ACCEL * math.cos(theta)))
-    return EulerAngles(phi, theta)
+    return utils.EulerAngles(phi, theta)
