@@ -24,14 +24,15 @@ def run_filter():
         )
         exit(1)
 
-    prev_attitude_estimate = utils.EulerAngles()
+    prev_angular_velocity_estimate = utils.AngularVelocities(0, 0, 0)
+    prev_attitude_estimate = utils.EulerAngles(0, 0, 0)
 
     for i in range(data.NUM_GYRO_MEAS):
         accel_meas = data.get_accelerometer_measurements(i)
         gyro_meas = data.get_gyro_measurements(i)
 
-        [phi, theta, psi] = estimate_attitude_with_complementary_filter(
-            accel_meas, gyro_meas, data.DELTA_TIME
+        estimated_attitude = estimate_attitude_with_complementary_filter(
+            accel_meas, gyro_meas, prev_angular_velocity_estimate, prev_attitude_estimate, data.DELTA_TIME
         )
 
 

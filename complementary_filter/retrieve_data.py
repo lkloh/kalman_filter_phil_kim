@@ -18,8 +18,6 @@ ACCEL_WY = ACCEL_MATLAB_DATA["fy"][:, 0]
 ACCEL_WZ = ACCEL_MATLAB_DATA["fz"][:, 0]
 NUM_ACCEL_MEAS = len(ACCEL_WX)
 
-GRAVITATIONAL_ACCEL = 9.8
-
 
 def get_gyro_measurements(index):
     return utils.AngularVelocities(GYRO_WX[index], GYRO_WY[index], GYRO_WZ[index])
@@ -27,9 +25,3 @@ def get_gyro_measurements(index):
 
 def get_accelerometer_measurements(index):
     return utils.Acceleration(ACCEL_WX[index], ACCEL_WY[index], ACCEL_WZ[index])
-
-
-def compute_euler_accel(accel):
-    theta = math.asin(accel.ax / GRAVITATIONAL_ACCEL)
-    phi = math.asin((-1 * accel.ay) / (GRAVITATIONAL_ACCEL * math.cos(theta)))
-    return utils.EulerAngles(phi, theta)
