@@ -44,4 +44,3 @@ def body_frame_to_inertial_frame(angular_rates_in_body_frame, euler_angle_in_ine
     dot_psi = q * sin_phi / cos_theta + r * cos_phi / cos_theta
 
     return EulerAngles(dot_phi, dot_theta, dot_psi)
-
